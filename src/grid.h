@@ -1,6 +1,11 @@
 #pragma once
 
-#include <assert.h>
+#define GRID_WIDTH 128
+#define GRID_HEIGHT 128
+#define GRID_SIZE GRID_WIDTH * GRID_HEIGHT 
+#define CELL_SIZE 4
+
+typedef struct Color Color;
 
 typedef enum Element {
     ELEMENT_EMPTY = 0,
@@ -9,52 +14,26 @@ typedef enum Element {
     ELEMENT_STONE
 } Element;
 
-typedef struct {
-    Element* data;
-    int width;
-    int height;
+typedef struct ElementGrid {
+    Element current_grid[GRID_SIZE];
+    Element next_grid[GRID_SIZE];
 } ElementGrid;
 
-bool in_bounds(const ElementGrid* grid, int x, int y)
-{
-    return x >= 0 && x < grid->width && y >= 0 && y < grid->height;
-}
 
-Element get_element(const ElementGrid* grid, int x, int y)
-{
-    assert(in_bounds(grid, x, y));
+ElementGrid create_grid();
 
-    return grid->data[x + y * grid->width];
-}
+bool in_bounds_of_grid(int x, int y);
 
-bool set_element(ElementGrid* grid, int x, int y, Element element)
-{
-    if (in_bounds(grid, x, y))
-    {
-        grid->data[x + y * grid->width] = element;
+Element get_element_in_grid(const ElementGrid* grid, int x, int y);
 
-        return true;
-    }
+bool overwrite_element_in_grid(ElementGrid* grid, int x, int y, Element element);
 
-    return false;
-}
+bool set_element_in_grid(ElementGrid* grid, int x, int y, Element element);
 
-bool has_element(const ElementGrid* grid, int x, int y, Element element)
-{
-    if (in_bounds(grid, x, y))
-    {
-        return get_element(grid, x, y) == element;
-    }
+bool is_empty_in_grid(const ElementGrid* grid, int x, int y);
 
-    return false;
-}
+void update_grid(ElementGrid* grid);
 
-bool is_empty(const ElementGrid* grid, int x, int y)
-{
-    if (in_bounds(grid, x, y))
-    {
-        return get_element(grid, x, y) == ELEMENT_EMPTY;
-    }
+void draw_element(int x, int y, Color colour);
 
-    return false;
-}
+void draw_grid(const ElementGrid* grid);
