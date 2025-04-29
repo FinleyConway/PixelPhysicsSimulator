@@ -46,7 +46,7 @@ void place_elements(CellChunk* chunk, Cell* current_cell)
             int extentY = y + j; 
             bool should_place = random() % 2 == 1;
             
-            if (is_empty_in_chunk(chunk, extentX, extentY) && should_place)
+            if (in_bounds_of_chunk(chunk, x, y) && in_bounds_of_chunk(chunk, extentX, extentY) && should_place)
             {
                 set_cell_in_chunk(chunk, extentX, extentY, current_cell);
             }
@@ -59,7 +59,7 @@ void remove_elements(CellChunk* chunk)
     int x = GetMouseX() / chunk->cell_size;
     int y = GetMouseY() / chunk->cell_size;
 
-    if (is_empty_in_chunk(chunk, x, y))
+    if (in_bounds_of_chunk(chunk, x, y) && is_empty_in_chunk(chunk, x, y))
     {
         overwrite_cell_in_chunk(chunk, x, y, &DEFAULT_CELL);
     }
@@ -68,15 +68,28 @@ void remove_elements(CellChunk* chunk)
 int main()
 {
     InitWindow(512, 512, "Sand Simulator");
+    SetTargetFPS(60); // make my laptop happy
 
     // main grid
     CellChunk chunk = create_chunk(128, 128, 4);
     Cell* current_cell = &SAND_CELL;
 
+    const int target_fps = 60;
+    const float time_step = (float)1 / target_fps;
+    float accumulator = 0.0f;
+    float current_time = GetTime();
+
     while (!WindowShouldClose())
     {
-        // bad practice, forces the app to run at 0.01 seconds per frame
-        WaitTime(0.01);
+        float newTime = GetTime();
+        float frameTime = newTime - current_time;
+        current_time = newTime;
+
+        if (frameTime > 0.25f) frameTime = 0.25f;
+
+        accumulator += frameTime;
+
+
 
         if (IsKeyPressed(KEY_ONE)) current_cell = &SAND_CELL;
         if (IsKeyPressed(KEY_TWO)) current_cell = &WATER_CELL;
@@ -93,7 +106,12 @@ int main()
             remove_elements(&chunk);
         }
 
-        update_chunk(&chunk);
+        // update cells at a fixed rate
+        while (accumulator >= time_step)
+        {
+            update_chunk(&chunk);
+            accumulator -= time_step;
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);
