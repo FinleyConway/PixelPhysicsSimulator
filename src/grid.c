@@ -1,39 +1,60 @@
 #include "grid.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "raylib.h"
+#include "cell.h"
 
-#include "element_update.h"
-
-ElementGrid create_grid()
+CellChunk create_chunk(size_t width, size_t height, unsigned int cell_size)
 {
-    ElementGrid grid;
-    
-    memset(grid.current_grid, 0, GRID_SIZE * sizeof(Element));
-    memset(grid.next_grid, 0, GRID_SIZE * sizeof(Element));
+    assert(width != 0 && height != 0);
+    assert(cell_size != 0);
+
+    size_t grid_size = width * height;
+
+    CellChunk grid = {
+        malloc(grid_size * sizeof(Cell)),
+        malloc(grid_size * sizeof(Cell)),
+        width,
+        height,
+        cell_size
+    };
 
     return grid;
 }
 
-bool in_bounds_of_grid(int x, int y)
+void destroy_chunk(CellChunk* chunk)
 {
-    return x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT;
+    // free grid
+    free(chunk->current_grid);
+    free(chunk->next_grid);
+
+    // set size to 0
+    chunk->width = 0;
+    chunk->height = 0; 
 }
 
-Element get_element_in_grid(const ElementGrid* grid, int x, int y)
+bool in_bounds_of_chunk(const CellChunk* chunk, size_t x, size_t y)
 {
-    assert(in_bounds_of_grid(x, y));
-
-    return grid->current_grid[x + y * GRID_WIDTH];
+    return x >= 0 && x < chunk->width && y >= 0 && y < chunk->height;
 }
 
-bool overwrite_element_in_grid(ElementGrid* grid, int x, int y, Element element)
+Cell* get_cell_in_chunk(const CellChunk* chunk, size_t x, size_t y)
 {
-    if (in_bounds_of_grid(x, y))
+    assert(in_bounds_of_chunk(chunk, x, y));
+
+    // make sure the array doesnt realloc or relocate so that the pointer doesnt invalidate!
+    return &chunk->current_grid[x + y * chunk->width];
+}
+
+bool overwrite_cell_in_chunk(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
+{
+    if (cell == NULL) return false;
+
+    if (in_bounds_of_chunk(chunk, x, y))
     {
-        grid->current_grid[x + y * GRID_WIDTH] = element;
+        chunk->current_grid[x + y * chunk->width] = *cell;
 
         return true;
     }
@@ -41,11 +62,13 @@ bool overwrite_element_in_grid(ElementGrid* grid, int x, int y, Element element)
     return false;
 }
 
-bool set_element_in_grid(ElementGrid* grid, int x, int y, Element element)
+bool set_cell_in_chunk(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
 {
-    if (in_bounds_of_grid(x, y))
+    if (cell == NULL) return false;
+
+    if (in_bounds_of_chunk(chunk, x, y))
     {
-        grid->next_grid[x + y * GRID_WIDTH] = element;
+        chunk->next_grid[x + y * chunk->width] = *cell;
 
         return true;
     }
@@ -53,67 +76,56 @@ bool set_element_in_grid(ElementGrid* grid, int x, int y, Element element)
     return false;
 }
 
-bool is_empty_in_grid(const ElementGrid* grid, int x, int y)
+bool is_empty_in_chunk(const CellChunk* chunk, size_t x, size_t y)
 {
-    bool current = grid->current_grid[x + y * GRID_WIDTH] == ELEMENT_EMPTY;
-    bool next = grid->next_grid[x + y * GRID_WIDTH] == ELEMENT_EMPTY;
+    bool current = chunk->current_grid[x + y * chunk->width].type == CELL_TYPE_EMPTY;
+    bool next = chunk->next_grid[x + y * chunk->width].type == CELL_TYPE_EMPTY;
 
-    return in_bounds_of_grid(x, y) && current && next;
+    return in_bounds_of_chunk(chunk, x, y) && current && next;
 }
 
-void update_grid(ElementGrid* grid)
+void update_chunk(CellChunk* chunk)
 {
     // check all pixels
-    for (int x = 0; x < GRID_WIDTH; x++)
+    for (size_t x = 0; x < chunk->width; x++)
     {
-        for (int y = 0; y < GRID_HEIGHT; y++)
+        for (size_t y = 0; y < chunk->height; y++)
         {   
-            Element current_element = get_element_in_grid(grid, x, y);
+            Cell* current_cell = get_cell_in_chunk(chunk, x, y);
+            ElementProperty property = current_cell->property;
 
-            if (current_element == ELEMENT_SAND)
+            if      (property & ELEMENT_PROPERTY_MOVE_UP            && move_cell_up(chunk, x, y, current_cell)) {}
+            else if (property & ELEMENT_PROPERTY_MOVE_UP_DIAGONAL   && move_cell_up_diagonal(chunk, x, y, current_cell)) {}
+            else if (property & ELEMENT_PROPERTY_MOVE_DOWN          && move_cell_down(chunk, x, y, current_cell)) {}
+            else if (property & ELEMENT_PROPERTY_MOVE_DOWN_DIAGONAL && move_cell_down_diagonal(chunk, x, y, current_cell)) {}
+            else if (property & ELEMENT_PROPERTY_MOVE_SIDEWAYS      && move_cell_sideways(chunk, x, y, current_cell)) {}
+            else if (property != ELEMENT_PROPERTY_MOVE_NONE)
             {
-                update_sand(grid, x, y);      
-            }
-            else if (current_element == ELEMENT_WATER)
-            {
-                update_water(grid, x, y);
-            }
-            else if (current_element == ELEMENT_STONE)
-            {
-                set_element_in_grid(grid, x, y, ELEMENT_STONE);
+                set_cell_in_chunk(chunk, x, y, current_cell); // will keep cells inside window
             }
         }
     }
 
+    size_t grid_size = chunk->width * chunk->height;
+
     // copy next state to the new grid state
-    memcpy(grid->current_grid, grid->next_grid, GRID_SIZE * sizeof(Element));
+    memcpy(chunk->current_grid, chunk->next_grid, grid_size * sizeof(Cell));
 
     // reset next_grid
-    memset(grid->next_grid, 0, GRID_SIZE * sizeof(Element));
+    memset(chunk->next_grid, 0, grid_size * sizeof(Cell));
 }
 
-void draw_element(int x, int y, Color colour)
-{
-    DrawRectangle(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE, colour);
-}
-
-void draw_grid(const ElementGrid* grid)
+void draw_chunk(const CellChunk* chunk)
 {
     // prolly draw to a texture and render it
 
-    for (int x = 0; x < GRID_WIDTH; x++)
+    for (size_t x = 0; x < chunk->width; x++)
     {
-        for (int y = 0; y < GRID_HEIGHT; y++)
+        for (size_t y = 0; y < chunk->height; y++)
         {
-            Element current_element = get_element_in_grid(grid, x, y);
+            Cell* current_cell = get_cell_in_chunk(chunk, x, y);
 
-            switch (current_element)
-            {
-                case ELEMENT_SAND: draw_element(x, y, YELLOW); break;
-                case ELEMENT_WATER: draw_element(x, y, BLUE); break;
-                case ELEMENT_STONE: draw_element(x, y, GRAY); break;
-                default: break;
-            }
+            draw_cell(chunk, x, y, current_cell->colour);
         }
     }
 }

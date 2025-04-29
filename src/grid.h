@@ -1,39 +1,30 @@
 #pragma once
 
-#define GRID_WIDTH 128
-#define GRID_HEIGHT 128
-#define GRID_SIZE GRID_WIDTH * GRID_HEIGHT 
-#define CELL_SIZE 4
+#include "cell.h"
 
-typedef struct Color Color;
-
-typedef enum Element {
-    ELEMENT_EMPTY = 0,
-    ELEMENT_SAND,
-    ELEMENT_WATER,
-    ELEMENT_STONE
-} Element;
-
-typedef struct ElementGrid {
-    Element current_grid[GRID_SIZE];
-    Element next_grid[GRID_SIZE];
-} ElementGrid;
+typedef struct CellChunk {
+    Cell* current_grid;
+    Cell* next_grid;
+    size_t width;
+    size_t height;
+    unsigned int cell_size;
+} CellChunk;
 
 
-ElementGrid create_grid();
+CellChunk create_chunk(size_t width, size_t height, unsigned int cell_size);
 
-bool in_bounds_of_grid(int x, int y);
+void destroy_chunk(CellChunk* chunk);
 
-Element get_element_in_grid(const ElementGrid* grid, int x, int y);
+bool in_bounds_of_chunk(const CellChunk* chunk, size_t x, size_t y);
 
-bool overwrite_element_in_grid(ElementGrid* grid, int x, int y, Element element);
+Cell* get_cell_in_chunk(const CellChunk* chunk, size_t x, size_t y);
 
-bool set_element_in_grid(ElementGrid* grid, int x, int y, Element element);
+bool overwrite_cell_in_chunk(CellChunk* chunk, size_t x, size_t y, const Cell* cell);
 
-bool is_empty_in_grid(const ElementGrid* grid, int x, int y);
+bool set_cell_in_chunk(CellChunk* chunk, size_t x, size_t y, const Cell* cell);
 
-void update_grid(ElementGrid* grid);
+bool is_empty_in_chunk(const CellChunk* chunk, size_t x, size_t y);
 
-void draw_element(int x, int y, Color colour);
+void update_chunk(CellChunk* chunk);
 
-void draw_grid(const ElementGrid* grid);
+void draw_chunk(const CellChunk* chunk);
