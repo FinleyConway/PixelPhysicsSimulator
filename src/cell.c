@@ -2,8 +2,9 @@
 
 #include <stdlib.h>
 
-#include "grid.h"
 #include "raylib.h"
+
+#include "grid.h"
 
 // === private ===
 
@@ -17,7 +18,7 @@ int random_dir()
 
 // ===============
 
-bool move_cell_up(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
+bool move_cell_up(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
 {
     bool can_up = is_empty_in_chunk(chunk, x, y - 1);
     
@@ -29,7 +30,7 @@ bool move_cell_up(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
     return can_up;
 }
 
-bool move_cell_down(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
+bool move_cell_down(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
 {
     bool can_down = is_empty_in_chunk(chunk, x, y + 1);
     
@@ -41,7 +42,7 @@ bool move_cell_down(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
     return can_down;
 }
 
-bool move_cell_sideways(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
+bool move_cell_sideways(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
 {
     int dir = random_dir();
 
@@ -53,7 +54,7 @@ bool move_cell_sideways(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
     return false;
 }
 
-bool move_cell_up_diagonal(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
+bool move_cell_up_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
 {
     int dir = random_dir();
 
@@ -65,7 +66,7 @@ bool move_cell_up_diagonal(CellChunk* chunk, size_t x, size_t y, const Cell* cel
     return false;
 }
 
-bool move_cell_down_diagonal(CellChunk* chunk, size_t x, size_t y, const Cell* cell)
+bool move_cell_down_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
 {
     int dir = random_dir();
 
@@ -77,7 +78,7 @@ bool move_cell_down_diagonal(CellChunk* chunk, size_t x, size_t y, const Cell* c
     return false;
 }
 
-void draw_cell(const CellChunk* chunk, size_t x, size_t y, Color colour)
+void draw_cell(unsigned int x, unsigned int y, Color colour)
 {
-    DrawRectangle(x * chunk->cell_size, y * chunk->cell_size, chunk->cell_size, chunk->cell_size, colour);
+    DrawRectangle(x * CHUNK_CELL_SIZE, y * CHUNK_CELL_SIZE, CHUNK_CELL_SIZE, CHUNK_CELL_SIZE, colour);
 }

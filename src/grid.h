@@ -1,30 +1,38 @@
 #pragma once
 
+#include "raylib.h"
+
 #include "cell.h"
 
+#define CHUNK_WIDTH 128
+#define CHUNK_HEIGHT 128
+#define CHUNK_SIZE CHUNK_WIDTH * CHUNK_HEIGHT
+#define CHUNK_CELL_SIZE 4
+
 typedef struct CellChunk {
-    Cell* current_grid;
-    Cell* next_grid;
-    size_t width;
-    size_t height;
-    unsigned int cell_size;
+    RenderTexture2D render_texture;
+    Cell current_grid[CHUNK_SIZE];
+    Cell next_grid[CHUNK_SIZE];
+    int position_x;
+    int position_y;
+    bool dirty;
 } CellChunk;
 
 
-CellChunk create_chunk(size_t width, size_t height, unsigned int cell_size);
+CellChunk* create_chunk();
 
 void destroy_chunk(CellChunk* chunk);
 
-bool in_bounds_of_chunk(const CellChunk* chunk, size_t x, size_t y);
+bool in_bounds_of_chunk(unsigned int x, unsigned int y);
 
-Cell* get_cell_in_chunk(const CellChunk* chunk, size_t x, size_t y);
+const Cell* get_cell_in_chunk(const CellChunk* chunk, unsigned int x, unsigned int y);
 
-bool overwrite_cell_in_chunk(CellChunk* chunk, size_t x, size_t y, const Cell* cell);
+bool overwrite_cell_in_chunk(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell);
 
-bool set_cell_in_chunk(CellChunk* chunk, size_t x, size_t y, const Cell* cell);
+bool set_cell_in_chunk(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell);
 
-bool is_empty_in_chunk(const CellChunk* chunk, size_t x, size_t y);
+bool is_empty_in_chunk(const CellChunk* chunk, unsigned int x, unsigned int y);
 
 void update_chunk(CellChunk* chunk);
 
-void draw_chunk(const CellChunk* chunk);
+void draw_chunk(CellChunk* chunk);
