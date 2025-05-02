@@ -36,3 +36,8 @@ bool is_empty_in_chunk(const CellChunk* chunk, unsigned int x, unsigned int y);
 void update_chunk(CellChunk* chunk);
 
 void draw_chunk(CellChunk* chunk);
+
+
+int mouse_to_grid_x(int mouse_x);
+
+int mouse_to_grid_y(int mouse_y);

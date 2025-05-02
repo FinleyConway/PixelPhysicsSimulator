@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "cell.h"
@@ -29,8 +28,8 @@ Cell STEAM_CELL = {
 
 void place_elements(CellChunk* chunk, Cell* current_cell)
 {
-    int x = GetMouseX() / CHUNK_CELL_SIZE;
-    int y = GetMouseY() / CHUNK_CELL_SIZE;
+    int x = mouse_to_grid_x(GetMouseX());
+    int y = mouse_to_grid_y(GetMouseY());
     int area = 5;
     
     int dx = (rand() % (2 * area + 1)) - area;
@@ -47,8 +46,8 @@ void place_elements(CellChunk* chunk, Cell* current_cell)
 
 void remove_elements(CellChunk* chunk)
 {
-    int x = GetMouseX() / CHUNK_CELL_SIZE;
-    int y = GetMouseY() / CHUNK_CELL_SIZE;
+    int x = mouse_to_grid_x(GetMouseX());
+    int y = mouse_to_grid_y(GetMouseY());
 
     if (in_bounds_of_chunk(x, y) && is_empty_in_chunk(chunk, x, y))
     {
@@ -91,7 +90,7 @@ int main()
         {
             remove_elements(chunk);
         }
-
+        
         // update cells at a fixed rate
         while (accumulator >= time_step)
         {

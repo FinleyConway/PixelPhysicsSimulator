@@ -171,3 +171,13 @@ void draw_chunk(CellChunk* chunk)
 
     DrawTextureRec(chunk->render_texture.texture, sourceRec, position, WHITE);
 }
+
+int mouse_to_grid_x(int mouse_x)
+{
+    return mouse_x / CHUNK_CELL_SIZE;
+}
+
+int mouse_to_grid_y(int mouse_y)
+{
+    return mouse_y / CHUNK_CELL_SIZE;
+}
