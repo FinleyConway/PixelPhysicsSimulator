@@ -27,12 +27,15 @@ typedef enum CellType {
 typedef struct Cell {
     Element type;
     CellMovement movement;
+    unsigned int velocity_x;
+    unsigned int velocity_y;
     Color colour;
 } Cell;
 
 const static Cell DEFAULT_CELL = {
     CELL_TYPE_EMPTY,
     CELL_MOVEMENT_MOVE_NONE,
+    0, 0,
     BLACK
 };
 

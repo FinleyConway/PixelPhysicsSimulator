@@ -8,21 +8,25 @@
 Cell SAND_CELL = { 
     CELL_TYPE_SAND, 
     CELL_MOVEMENT_MOVE_DOWN | CELL_MOVEMENT_MOVE_DOWN_DIAGONAL, 
+    0, 2,
     YELLOW
 };
 Cell WATER_CELL = { 
     CELL_TYPE_WATER, 
     CELL_MOVEMENT_MOVE_DOWN | CELL_MOVEMENT_MOVE_DOWN_DIAGONAL | CELL_MOVEMENT_MOVE_SIDEWAYS,  
+    2, 5,
     BLUE 
 };
 Cell STONE_CELL = { 
     CELL_TYPE_STONE, 
     CELL_MOVEMENT_STATIONARY, 
+    0, 0,
     DARKGRAY 
 };
 Cell STEAM_CELL = { 
     CELL_TYPE_STEAM, 
     CELL_MOVEMENT_MOVE_UP | CELL_MOVEMENT_MOVE_UP_DIAGONAL | CELL_MOVEMENT_MOVE_SIDEWAYS,
+    4, 4,
     GRAY 
 };
 
@@ -90,7 +94,7 @@ int main()
         {
             remove_elements(chunk);
         }
-        
+
         // update cells at a fixed rate
         while (accumulator >= time_step)
         {
