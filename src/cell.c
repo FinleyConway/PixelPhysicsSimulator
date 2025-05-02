@@ -63,20 +63,10 @@ bool move_cell_down(CellChunk* chunk, unsigned int x, unsigned int y, const Cell
 bool move_cell_sideways(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
 {
     int dir = random_dir();
-    unsigned int movement_amount = 0;
 
-    for (unsigned int i = 1; i <= cell->velocity_x; i++)
+    if (is_empty_in_chunk(chunk, x + dir, y))
     {
-        if (is_empty_in_chunk(chunk, x + dir * i, y))
-        {
-            movement_amount++;
-        }
-        else break;
-    }
-
-    if (movement_amount > 0)
-    {
-        return set_cell_in_chunk(chunk, x + dir * movement_amount, y, cell);
+        return set_cell_in_chunk(chunk, x + dir, y, cell);
     }
 
     return false;
@@ -84,22 +74,11 @@ bool move_cell_sideways(CellChunk* chunk, unsigned int x, unsigned int y, const 
 
 bool move_cell_up_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
 {
-    int dir = random_dir(); 
-    unsigned int max_steps = cell->velocity_x < cell->velocity_y ? cell->velocity_x : cell->velocity_y;
-    unsigned int movement_amount = 0;
+    int dir = random_dir();
 
-    for (unsigned int i = 1; i <= max_steps; i++)
+    if (is_empty_in_chunk(chunk, x + dir, y - 1))
     {
-        if (is_empty_in_chunk(chunk, x + dir * i, y - i))
-        {
-            movement_amount++;
-        }
-        else break;
-    }
-
-    if (movement_amount > 0)
-    {
-        return set_cell_in_chunk(chunk, x + dir * movement_amount, y - movement_amount, cell);
+        return set_cell_in_chunk(chunk, x + dir, y - 1, cell);
     }
 
     return false;
@@ -108,21 +87,10 @@ bool move_cell_up_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, con
 bool move_cell_down_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
 {
     int dir = random_dir();
-    unsigned int max_steps = cell->velocity_x < cell->velocity_y ? cell->velocity_x : cell->velocity_y;
-    unsigned int movement_amount = 0;
 
-    for (unsigned int i = 1; i <= max_steps; i++)
+    if (is_empty_in_chunk(chunk, x + dir, y + 1))
     {
-        if (is_empty_in_chunk(chunk, x + dir * i, y + i))
-        {
-            movement_amount++;
-        }
-        else break;
-    }
-
-    if (movement_amount > 0)
-    {
-        return set_cell_in_chunk(chunk, x + dir * movement_amount, y + movement_amount, cell);
+        return set_cell_in_chunk(chunk, x + dir, y + 1, cell);
     }
 
     return false;
