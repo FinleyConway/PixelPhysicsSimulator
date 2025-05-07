@@ -18,7 +18,7 @@ int random_dir()
 
 // ===============
 
-bool move_cell_up(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
+bool move_cell_up(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell)
 {
     unsigned int movement_amount = 0;
 
@@ -33,13 +33,16 @@ bool move_cell_up(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* 
 
     if (movement_amount > 0)
     {
+        cell->direction_x = 0;
+        cell->direction_y = 1;
+
         return set_cell_in_chunk(chunk, x, y - movement_amount, cell);
     }
 
     return false;
 }
 
-bool move_cell_down(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
+bool move_cell_down(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell)
 {
     unsigned int movement_amount = 0;
 
@@ -54,42 +57,89 @@ bool move_cell_down(CellChunk* chunk, unsigned int x, unsigned int y, const Cell
 
     if (movement_amount > 0)
     {
+        cell->direction_x = 0;
+        cell->direction_y = -1;
+
         return set_cell_in_chunk(chunk, x, y + movement_amount, cell);
     }
 
     return false;
 }
 
-bool move_cell_sideways(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
+bool move_cell_sideways(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell)
 {
-    int dir = random_dir();
+    bool right = is_empty_in_chunk(chunk, x + 1, y);
+    bool left = is_empty_in_chunk(chunk, x - 1, y);
 
-    if (is_empty_in_chunk(chunk, x + dir, y))
+    if (cell->direction_x == 1 || (right && cell->direction_x == 0))
     {
-        return set_cell_in_chunk(chunk, x + dir, y, cell);
+        if (right)
+        {
+            cell->direction_x = 1;
+
+            return set_cell_in_chunk(chunk, x + 1, y, cell);
+        }
+        else if (left) 
+        {
+            cell->direction_x = -1;
+
+            return set_cell_in_chunk(chunk, x - 1, y, cell);
+        }
+
+        cell->direction_x = 0;
+        
+        return false;
     }
+
+    if (cell->direction_x == -1 || (left && cell->direction_x == 0))
+    {
+        if (left)
+        {
+            cell->direction_x = -1;
+
+            return set_cell_in_chunk(chunk, x - 1, y, cell);
+        }
+        else if (right) 
+        {
+            cell->direction_x = 1;
+
+            return set_cell_in_chunk(chunk, x + 1, y, cell);
+        }
+
+        cell->direction_x = 0;
+        
+        return false;
+    }
+
+    cell->direction_x = 0;
 
     return false;
 }
 
-bool move_cell_up_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
+bool move_cell_up_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell)
 {
     int dir = random_dir();
 
     if (is_empty_in_chunk(chunk, x + dir, y - 1))
     {
+        cell->direction_x = dir;
+        cell->direction_y = 1;
+
         return set_cell_in_chunk(chunk, x + dir, y - 1, cell);
     }
 
     return false;
 }
 
-bool move_cell_down_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell)
+bool move_cell_down_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell)
 {
     int dir = random_dir();
 
     if (is_empty_in_chunk(chunk, x + dir, y + 1))
     {
+        cell->direction_x = dir;
+        cell->direction_y = -1;
+
         return set_cell_in_chunk(chunk, x + dir, y + 1, cell);
     }
 

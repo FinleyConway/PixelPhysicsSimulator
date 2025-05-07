@@ -25,7 +25,7 @@ void destroy_chunk(CellChunk* chunk);
 
 bool in_bounds_of_chunk(unsigned int x, unsigned int y);
 
-const Cell* get_cell_in_chunk(const CellChunk* chunk, unsigned int x, unsigned int y);
+Cell* get_cell_in_chunk(CellChunk* chunk, unsigned int x, unsigned int y);
 
 bool overwrite_cell_in_chunk(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell);
 

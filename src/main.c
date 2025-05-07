@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <time.h>
 
 #include "cell.h"
 #include "raylib.h"
@@ -9,17 +10,20 @@ Cell SAND_CELL = {
     CELL_TYPE_SAND, 
     CELL_MOVEMENT_MOVE_DOWN | CELL_MOVEMENT_MOVE_DOWN_DIAGONAL, 
     0, 2,
+    0, 0,
     YELLOW
 };
 Cell WATER_CELL = { 
     CELL_TYPE_WATER, 
     CELL_MOVEMENT_MOVE_DOWN | CELL_MOVEMENT_MOVE_DOWN_DIAGONAL | CELL_MOVEMENT_MOVE_SIDEWAYS,  
     2, 5,
+    0, 0,
     BLUE 
 };
 Cell STONE_CELL = { 
     CELL_TYPE_STONE, 
     CELL_MOVEMENT_STATIONARY, 
+    0, 0,
     0, 0,
     DARKGRAY 
 };
@@ -27,6 +31,7 @@ Cell STEAM_CELL = {
     CELL_TYPE_STEAM, 
     CELL_MOVEMENT_MOVE_UP | CELL_MOVEMENT_MOVE_UP_DIAGONAL | CELL_MOVEMENT_MOVE_SIDEWAYS,
     4, 4,
+    0, 0,
     GRAY 
 };
 
@@ -34,13 +39,13 @@ void place_elements(CellChunk* chunk, Cell* current_cell)
 {
     int x = mouse_to_grid_x(GetMouseX());
     int y = mouse_to_grid_y(GetMouseY());
-    int area = 5;
+    //int area = 5;
     
-    int dx = (rand() % (2 * area + 1)) - area;
-    int dy = (rand() % (2 * area + 1)) - area;
+    //int dx = (rand() % (2 * area + 1)) - area;
+    //int dy = (rand() % (2 * area + 1)) - area;
 
-    int extentX = x + dx;
-    int extentY = y + dy;
+    int extentX = x;// + dx;
+    int extentY = y;// + dy;
 
     if (in_bounds_of_chunk(extentX, extentY))
     {
@@ -53,7 +58,7 @@ void remove_elements(CellChunk* chunk)
     int x = mouse_to_grid_x(GetMouseX());
     int y = mouse_to_grid_y(GetMouseY());
 
-    if (in_bounds_of_chunk(x, y) && is_empty_in_chunk(chunk, x, y))
+    if (in_bounds_of_chunk(x, y))
     {
         overwrite_cell_in_chunk(chunk, x, y, &DEFAULT_CELL);
     }
@@ -61,8 +66,9 @@ void remove_elements(CellChunk* chunk)
 
 int main()
 {
+    srandom(time(NULL));
     InitWindow(512, 512, "Sand Simulator");
-    //SetTargetFPS(60); // make my laptop happy
+    SetTargetFPS(60); // make my laptop happy
 
     // main grid
     CellChunk* chunk = create_chunk();
@@ -90,7 +96,7 @@ int main()
         {
             place_elements(chunk, current_cell);
         }
-        else if (IsMouseButtonDown(1))
+        if (IsMouseButtonDown(1))
         {
             remove_elements(chunk);
         }

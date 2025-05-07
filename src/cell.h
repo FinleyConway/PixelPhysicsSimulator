@@ -29,6 +29,8 @@ typedef struct Cell {
     CellMovement movement;
     unsigned int velocity_x;
     unsigned int velocity_y;
+    int direction_x;
+    int direction_y;
     Color colour;
 } Cell;
 
@@ -36,17 +38,18 @@ const static Cell DEFAULT_CELL = {
     CELL_TYPE_EMPTY,
     CELL_MOVEMENT_MOVE_NONE,
     0, 0,
+    0, 0,
     BLACK
 };
 
-bool move_cell_up(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell);
+bool move_cell_up(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell);
 
-bool move_cell_down(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell );
+bool move_cell_down(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell );
 
-bool move_cell_sideways(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell);
+bool move_cell_sideways(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell);
 
-bool move_cell_up_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell);
+bool move_cell_up_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell);
 
-bool move_cell_down_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, const Cell* cell);
+bool move_cell_down_diagonal(CellChunk* chunk, unsigned int x, unsigned int y, Cell* cell);
 
 void draw_cell(unsigned int x, unsigned int y, Color colour);

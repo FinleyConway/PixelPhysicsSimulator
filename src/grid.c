@@ -44,7 +44,7 @@ bool in_bounds_of_chunk(unsigned int x, unsigned int y)
     return x < CHUNK_WIDTH && y < CHUNK_HEIGHT;
 }
 
-const Cell* get_cell_in_chunk(const CellChunk* chunk, unsigned int x, unsigned int y)
+Cell* get_cell_in_chunk(CellChunk* chunk, unsigned int x, unsigned int y)
 {
     assert(chunk != NULL);
     assert(in_bounds_of_chunk(x, y));
@@ -110,7 +110,7 @@ void update_chunk(CellChunk* chunk)
     {
         for (unsigned int y = 0; y < CHUNK_HEIGHT; y++)
         {   
-            const Cell* current_cell = get_cell_in_chunk(chunk, x, y);
+            Cell* current_cell = get_cell_in_chunk(chunk, x, y);
             CellMovement movement = current_cell->movement;
 
             if      (movement & CELL_MOVEMENT_MOVE_UP            && move_cell_up(chunk, x, y, current_cell)) {}
