@@ -107,35 +107,34 @@ public:
         m_next_grid.fill(Cell());
     }
 
-    void draw()
+    void pre_draw()
     {
         // re-render chunk if dirty
-        if (m_is_dirty)
+        if (!m_is_dirty) return;
+
+        BeginTextureMode(m_render_texture);
+        ClearBackground(BLANK);
+
+        for (size_t x = 0; x < Width; x++)
         {
-            BeginTextureMode(m_render_texture);
-            ClearBackground(BLANK);
-
-            for (size_t x = 0; x < Width; x++)
+            for (size_t y = 0; y < Height; y++)
             {
-                for (size_t y = 0; y < Height; y++)
-                {
-                    const Cell& current_cell = get_cell(x, y);
+                const Cell& current_cell = get_cell(x, y);
 
-                    if (current_cell.cell_type != CellType::Bob)
-                    {
-                        DrawRectangle(x * CellSize, y * CellSize, CellSize, CellSize, WHITE);
-                    }
-                    else {
-                        DrawRectangle(x * CellSize, y * CellSize, CellSize, CellSize, RED);
-                    }
+                if (current_cell.cell_type != CellType::Empty)
+                {
+                    DrawRectangle(x * CellSize, y * CellSize, CellSize, CellSize, current_cell.colour);
                 }
             }
-
-            EndTextureMode();
-
-            m_is_dirty = false; // reset flag
         }
 
+        EndTextureMode();
+
+        m_is_dirty = false; // reset flag
+    }
+
+    void draw()
+    {
         // draw the chunk texture
         Rectangle sourceRec = {
             0.0f,                        
@@ -145,8 +144,8 @@ public:
         };
 
         Vector2 position = {
-            m_position_x * Width * CellSize,
-            m_position_y * Height * CellSize
+            (float)m_position_x,
+            (float)m_position_y
         };
 
         DrawTextureRec(m_render_texture.texture, sourceRec, position, WHITE);

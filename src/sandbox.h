@@ -3,8 +3,10 @@
 #include <cmath>
 #include <cstdint>
 #include <unordered_map>
+#include <iostream>
 
 #include "cell_chunk.h"
+#include "raylib.h"
 
 // temp, just to get intellisense
 #define Width 64
@@ -52,14 +54,44 @@ public:
         return false;
     }
 
+    void update()
+    {
+        // slow iterating map
+        for (auto& [pos, chunk] : m_Chunks)
+        {
+            chunk.update();
+        }
+    }
+
+    void pre_draw()
+    {
+        // slow iterating map
+        // update all dirty chuks
+        for (auto& [pos, chunk] : m_Chunks)
+        {
+            chunk.pre_draw();
+        }
+    }
+
+    void draw()
+    {
+        // slow iterating map
+        for (auto& [pos, chunk] : m_Chunks)
+        {
+            chunk.draw();
+        }
+    }
+
     size_t get_chunk_count() const { return m_Chunks.size(); }
 
 //private:
     CellChunk<Width, Height, CellSize>& get_or_create_chunk(int32_t chunk_x, int32_t chunk_y)
     {
+        std::cout << chunk_x * Width * CellSize << " " << chunk_y * Height * CellSize << std::endl;
+
         const auto& [it, inserted] = m_Chunks.try_emplace(
             { chunk_x, chunk_y }, 
-            chunk_x, chunk_y
+            chunk_x * Width * CellSize, chunk_y * Height * CellSize
         );
 
         return it->second;
