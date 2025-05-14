@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include "raylib.h"
+
 enum class CellType
 {
     Empty = 0,
@@ -12,42 +14,30 @@ enum class CellType
 
 struct Cell
 {
-    CellType cell_type;
+    Cell() : cell_type(CellType::Empty), colour(BLANK) { }
+    Cell(CellType cell_type, Color colour) : cell_type(cell_type), colour(colour) {}
+
+    CellType cell_type ;
+    Color colour;
 };
 
-template<size_t Width, size_t Height>
+template<size_t Width, size_t Height, size_t CellSize>
 class CellChunk 
 {
 public:
     CellChunk(int32_t position_x, int32_t position_y) :
-        m_PositionX(position_x),
-        m_PositionY(position_y)
+        m_position_x(position_x),
+        m_position_y(position_y)
     {
+        m_render_texture = LoadRenderTexture(
+			Width * CellSize, 
+			Height * CellSize
+		);
     }
 
-    size_t get_area() const
+    ~CellChunk()
     {
-        return Width * Height;
-    }
-
-    size_t get_width() const
-    {
-        return Width;
-    }
-
-    size_t get_height() const
-    {
-        return Height;
-    }
-
-    int32_t get_position_x() const
-    {
-        return m_PositionX;
-    }
-
-    int32_t get_position_y() const
-    {
-        return m_PositionY;
+        UnloadRenderTexture(m_render_texture);
     }
 
     bool in_bounds(size_t x, size_t y) const
@@ -55,34 +45,17 @@ public:
         return x < Width && y < Height;
     }
 
-    bool is_empty(size_t x, size_t y) const
+    const Cell& get_cell(size_t x, size_t y) const
     {
-        if (in_bounds(x, y))
-        {
-            bool current = m_CurrentGrid[x + y * Width].cell_type == CellType::Empty;
-            bool next = m_NextGrid[x + y * Width].cell_type == CellType::Empty;
-
-            return current && next;
-        }
-
-        return false;
-    }
-
-    const Cell* get_cell(size_t x, size_t y) const
-    {
-        if (in_bounds(x, y))
-        {
-            return &m_CurrentGrid[x + y * Width];
-        }
-
-        return nullptr;
+        return m_current_grid[x + y * Width];
     }
 
     bool set_cell(size_t x, size_t y, const Cell& cell)
     {
         if (in_bounds(x, y))
         {
-            m_NextGrid[x + y * Width] = cell;
+            m_next_grid[x + y * Width] = cell;
+            m_is_dirty = true;
 
             return true;
         }
@@ -90,6 +63,30 @@ public:
         return false;
     }
 
+    bool has_cell(size_t x, size_t y) const
+    {
+        if (in_bounds(x, y))
+        {
+            return m_current_grid[x + y * Width].cell_type != CellType::Empty;
+        }
+
+        return false;
+    }
+
+    bool is_empty_cell(size_t x, size_t y) const
+    {
+        if (in_bounds(x, y))
+        {
+            bool current = m_current_grid[x + y * Width].cell_type == CellType::Empty;
+            bool next = m_next_grid[x + y * Width].cell_type == CellType::Empty;
+
+            return current && next;
+        }
+
+        return false;
+    }
+
+public:
     void update()
     {
         for (size_t x = 0; x < Width; x++)
@@ -97,22 +94,69 @@ public:
             for (size_t y = 0; y < Height; y++)
             {
                 // update grid
-                const Cell* cell = get_cell(x, y);
+                const Cell& cell = get_cell(x, y);
+
+                if (cell.cell_type != CellType::Empty)
+                {
+                    set_cell(x, y, cell);
+                }
             }
         }
 
-        m_CurrentGrid = m_NextGrid;
-        m_NextGrid.fill(Cell());
+        m_current_grid = m_next_grid;
+        m_next_grid.fill(Cell());
     }
 
-    void draw() const
+    void draw()
     {
+        // re-render chunk if dirty
+        if (m_is_dirty)
+        {
+            BeginTextureMode(m_render_texture);
+            ClearBackground(BLANK);
 
+            for (size_t x = 0; x < Width; x++)
+            {
+                for (size_t y = 0; y < Height; y++)
+                {
+                    const Cell& current_cell = get_cell(x, y);
+
+                    if (current_cell.cell_type != CellType::Bob)
+                    {
+                        DrawRectangle(x * CellSize, y * CellSize, CellSize, CellSize, WHITE);
+                    }
+                    else {
+                        DrawRectangle(x * CellSize, y * CellSize, CellSize, CellSize, RED);
+                    }
+                }
+            }
+
+            EndTextureMode();
+
+            m_is_dirty = false; // reset flag
+        }
+
+        // draw the chunk texture
+        Rectangle sourceRec = {
+            0.0f,                        
+            0.0f,                        
+            (float)m_render_texture.texture.width,
+            -(float)m_render_texture.texture.height // flip texture
+        };
+
+        Vector2 position = {
+            m_position_x * Width * CellSize,
+            m_position_y * Height * CellSize
+        };
+
+        DrawTextureRec(m_render_texture.texture, sourceRec, position, WHITE);
     }
 
 private:
-    std::array<Cell, Width * Height> m_CurrentGrid;
-    std::array<Cell, Width * Height> m_NextGrid;
-    int32_t m_PositionX = 0;
-    int32_t m_PositionY = 0;
+    bool m_is_dirty = true;
+    int32_t m_position_x = 0;
+    int32_t m_position_y = 0;
+    RenderTexture2D m_render_texture;
+    std::array<Cell, Width * Height> m_current_grid;
+    std::array<Cell, Width * Height> m_next_grid;
 };
