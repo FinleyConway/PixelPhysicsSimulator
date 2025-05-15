@@ -121,6 +121,11 @@ public:
         DrawTextureRec(m_render_texture.texture, sourceRec, position, WHITE);
     }
 
+    void debug_draw()
+    {
+        DrawRectangleLines(m_position_x, m_position_y, Width * CellSize, Height * CellSize, GREEN);
+    }
+
 //private:
     int32_t m_position_x = 0;
     int32_t m_position_y = 0;

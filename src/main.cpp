@@ -7,7 +7,7 @@
 
 void raylib()
 {
-    InitWindow(512, 512, "Pixel Physics");
+    InitWindow(1280, 720, "Pixel Physics");
 
     const int target_fps = 60;
     const float time_step = 1.0f / target_fps;
@@ -67,27 +67,34 @@ void raylib()
         
         camera.target = movement;
 
-        // update cells at a fixed rate
         while (accumulator >= time_step)
         {
-            sandbox.update([&](const Cell& cell, size_t x, size_t y)
+            sandbox.update([&](const Cell& cell, int32_t x, int32_t y)
             {
                 if (cell.cell_type == CellType::Stone)
                 {
                     sandbox.set_cell(x, y, cell);
                 }
 
-                // if (cell.cell_type == CellType::Sand)
-                // {
-                //     if (sandbox.has_empty_cell(x, y + 1))
-                //     {
-                //         sandbox.set_cell(x, y + 1, cell);
-                //     }
-                //     else 
-                //     {
-                //         sandbox.set_cell(x, y, cell);
-                //     }
-                // }
+                if (cell.cell_type == CellType::Sand)
+                {
+                    if (sandbox.has_empty_cell(x, y + 1))
+                    {
+                        sandbox.set_cell(x, y + 1, cell);
+                    }
+                    else if (sandbox.has_empty_cell(x + 1, y + 1))
+                    {
+                        sandbox.set_cell(x + 1, y + 1, cell);
+                    }
+                    else if (sandbox.has_empty_cell(x - 1, y + 1))
+                    {
+                        sandbox.set_cell(x + 1, y + 1, cell);
+                    }
+                    else 
+                    {
+                        sandbox.set_cell(x, y, cell);
+                    }
+                }
             });
 
             accumulator -= time_step;
@@ -102,6 +109,7 @@ void raylib()
         // within camera draw
         BeginMode2D(camera);
         sandbox.draw();
+        sandbox.debug_draw();
         EndMode2D();
 
         // global draw

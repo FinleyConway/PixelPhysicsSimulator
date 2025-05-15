@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <functional>
 #include <unordered_map>
 
@@ -72,21 +73,22 @@ public:
     }
 
     template<typename Func>
-    void update(Func&& update)
+    void update(Func update)
     {
         // slow iterating map
         for (auto& [pos, chunk] : m_chunks)
         {
+            // update the current chunk
             for (size_t x = 0; x < Width; x++)
             {
                 for (size_t y = 0; y < Height; y++)
                 {
                     const Cell& cell = chunk.get_cell(x, y);
 
-                    size_t world_x = x + chunk.m_position_x;
-                    size_t world_y = y + chunk.m_position_y;
+                    int32_t world_x = x + (chunk.m_position_x / CellSize);
+                    int32_t world_y = y + (chunk.m_position_y / CellSize);
 
-                    std::forward<Func>(update)(cell, world_x, world_y);
+                    update(cell, world_x, world_y);
                 }
             }
 
@@ -110,6 +112,15 @@ public:
         for (auto& [pos, chunk] : m_chunks)
         {
             chunk.draw();
+        }
+    }
+
+    void debug_draw()
+    {
+        // slow iterating map
+        for (auto& [pos, chunk] : m_chunks)
+        {
+            chunk.debug_draw();
         }
     }
 
