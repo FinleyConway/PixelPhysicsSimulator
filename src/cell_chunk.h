@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
@@ -7,6 +8,14 @@
 #include "raylib.h"
 
 #include "cell.h"
+
+struct Rect
+{
+    int32_t min_x = 0;
+    int32_t min_y = 0;
+    int32_t max_x = 0;
+    int32_t max_y = 0;
+};
 
 template<size_t Width, size_t Height, size_t CellSize>
 class CellChunk 
@@ -47,6 +56,7 @@ public:
         if (in_bounds(x, y))
         {
             m_next_grid[x + y * Width] = cell;
+            set_next_rect(x + y * Width);
             m_is_dirty = true;
 
             return true;
@@ -78,21 +88,56 @@ public:
         return false;
     }
 
+private:
+    void set_next_rect(size_t index)
+    {
+        int32_t x = index % Width;
+        int32_t y = index / Width;
+
+        int32_t min_x = std::max(x - 2, 0);
+        int32_t min_y = std::max(y - 2, 0);
+        int32_t max_x = std::min<int32_t>(x + 2, Width - 1);
+        int32_t max_y = std::min<int32_t>(y + 2, Height - 1);
+
+        m_working_rect.min_x = std::min(m_working_rect.min_x, min_x);
+        m_working_rect.min_y = std::min(m_working_rect.min_y, min_y);
+        m_working_rect.max_x = std::max(m_working_rect.max_x, max_x);
+        m_working_rect.max_y = std::max(m_working_rect.max_y, max_y);
+    }
+
+
+    void flip_rect()
+    {
+        m_dirty_rect.min_x = m_working_rect.min_x;
+        m_dirty_rect.min_y = m_working_rect.min_y;
+        m_dirty_rect.max_x = m_working_rect.max_x;
+        m_dirty_rect.max_y = m_working_rect.max_y;
+
+        m_working_rect.min_x = Width;
+        m_working_rect.min_y = Height;
+        m_working_rect.max_x = -1;
+        m_working_rect.max_y = -1;
+    }
+
 public:
     void flip()
     {
         m_current_grid = m_next_grid;
         m_next_grid.fill(Cell());
+
+        flip_rect();
     }
 
     void pre_draw()
     {
-        // re-render chunk if dirty
         if (!m_is_dirty) return;
 
         BeginTextureMode(m_render_texture);
         ClearBackground(BLANK);
 
+        // prehaps see if i can slice up the rendering too?
+        // perhaps define a sissor mode?
+        // tho i should benchmark where the slow downs are happening at!
         for (size_t x = 0; x < Width; x++)
         {
             for (size_t y = 0; y < Height; y++)
@@ -105,7 +150,7 @@ public:
 
         EndTextureMode();
 
-        m_is_dirty = false; // reset flag
+        m_is_dirty = false;
     }
 
     void draw()
@@ -129,12 +174,21 @@ public:
     void debug_draw()
     {
         DrawRectangleLines(m_position_x, m_position_y, Width * CellSize, Height * CellSize, GREEN);
+        DrawRectangleLines(
+        m_position_x + m_dirty_rect.min_x * CellSize,
+        m_position_y + m_dirty_rect.min_y * CellSize,
+        (m_dirty_rect.max_x - m_dirty_rect.min_x) * CellSize,
+        (m_dirty_rect.max_y - m_dirty_rect.min_y) * CellSize,
+        RED
+    );
     }
 
 //private:
+    bool m_is_dirty = true;
     int32_t m_position_x = 0;
     int32_t m_position_y = 0;
-    bool m_is_dirty = true;
+    Rect m_dirty_rect;
+    Rect m_working_rect;
 
     RenderTexture2D m_render_texture;
     std::array<Cell, Width * Height> m_current_grid;

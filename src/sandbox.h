@@ -80,13 +80,11 @@ public:
         for (auto it = m_chunks.begin(); it != m_chunks.end(); )
         {
             auto& chunk = it->second;
-            size_t max_cells = Width * Height;
-            size_t empty_cells = 0;
 
             // update the current chunk
-            for (size_t x = 0; x < Width; x++)
+            for (int x = chunk.m_dirty_rect.min_x; x <= chunk.m_dirty_rect.max_x; ++x)
             {
-                for (size_t y = 0; y < Height; y++)
+                for (int y = chunk.m_dirty_rect.min_y; y <= chunk.m_dirty_rect.max_y; ++y)
                 {
                     const Cell& cell = chunk.get_cell(x, y);
 
@@ -94,25 +92,12 @@ public:
                     int32_t world_y = y + (chunk.m_position_y / CellSize);
 
                     update(cell, world_x, world_y);
-
-                    if (chunk.get_temp_cell(x, y).cell_type == CellType::Empty)
-                    {
-                        empty_cells++;
-                    }
                 }
             }
 
-            if (empty_cells == max_cells)
-            {
-                // remove chunk
-                it = m_chunks.erase(it);
-            }
-            else
-            {
-                // update chunk
-                chunk.flip();
-                it++;
-            }
+            // update chunk
+            chunk.flip();
+            it++;
         }
     }
 
