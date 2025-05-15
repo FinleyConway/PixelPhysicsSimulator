@@ -6,20 +6,7 @@
 
 #include "raylib.h"
 
-enum class CellType
-{
-    Empty = 0,
-    Bob,
-};
-
-struct Cell
-{
-    Cell() : cell_type(CellType::Empty), colour(BLANK) { }
-    Cell(CellType cell_type, Color colour) : cell_type(cell_type), colour(colour) {}
-
-    CellType cell_type ;
-    Color colour;
-};
+#include "cell.h"
 
 template<size_t Width, size_t Height, size_t CellSize>
 class CellChunk 
@@ -87,22 +74,8 @@ public:
     }
 
 public:
-    void update()
+    void flip()
     {
-        for (size_t x = 0; x < Width; x++)
-        {
-            for (size_t y = 0; y < Height; y++)
-            {
-                // update grid
-                const Cell& cell = get_cell(x, y);
-
-                if (cell.cell_type != CellType::Empty)
-                {
-                    set_cell(x, y, cell);
-                }
-            }
-        }
-
         m_current_grid = m_next_grid;
         m_next_grid.fill(Cell());
     }
@@ -121,10 +94,7 @@ public:
             {
                 const Cell& current_cell = get_cell(x, y);
 
-                if (current_cell.cell_type != CellType::Empty)
-                {
-                    DrawRectangle(x * CellSize, y * CellSize, CellSize, CellSize, current_cell.colour);
-                }
+                DrawRectangle(x * CellSize, y * CellSize, CellSize, CellSize, current_cell.colour);
             }
         }
 
@@ -151,11 +121,12 @@ public:
         DrawTextureRec(m_render_texture.texture, sourceRec, position, WHITE);
     }
 
-private:
-    bool m_is_dirty = true;
+//private:
     int32_t m_position_x = 0;
     int32_t m_position_y = 0;
+    bool m_is_dirty = true;
+
     RenderTexture2D m_render_texture;
     std::array<Cell, Width * Height> m_current_grid;
-    std::array<Cell, Width * Height> m_next_grid;
+    std::array<Cell, Width * Height> m_next_grid; 
 };
