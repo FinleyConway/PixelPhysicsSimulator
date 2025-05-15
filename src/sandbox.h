@@ -6,6 +6,7 @@
 #include <functional>
 #include <unordered_map>
 
+#include "cell.h"
 #include "cell_chunk.h"
 
 // temp, just to get intellisense
@@ -76,8 +77,12 @@ public:
     void update(Func update)
     {
         // slow iterating map
-        for (auto& [pos, chunk] : m_chunks)
+        for (auto it = m_chunks.begin(); it != m_chunks.end(); )
         {
+            auto& chunk = it->second;
+            size_t max_cells = Width * Height;
+            size_t empty_cells = 0;
+
             // update the current chunk
             for (size_t x = 0; x < Width; x++)
             {
@@ -89,10 +94,25 @@ public:
                     int32_t world_y = y + (chunk.m_position_y / CellSize);
 
                     update(cell, world_x, world_y);
+
+                    if (chunk.get_temp_cell(x, y).cell_type == CellType::Empty)
+                    {
+                        empty_cells++;
+                    }
                 }
             }
 
-            chunk.flip();
+            if (empty_cells == max_cells)
+            {
+                // remove chunk
+                it = m_chunks.erase(it);
+            }
+            else
+            {
+                // update chunk
+                chunk.flip();
+                it++;
+            }
         }
     }
 

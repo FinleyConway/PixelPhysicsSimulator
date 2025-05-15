@@ -37,6 +37,11 @@ public:
         return m_current_grid[x + y * Width];
     }
 
+    const Cell& get_temp_cell(size_t x, size_t y) const
+    {
+        return m_next_grid[x + y * Width];
+    }
+
     bool set_cell(size_t x, size_t y, const Cell& cell)
     {
         if (in_bounds(x, y))

@@ -30,19 +30,26 @@ void raylib()
         previous_time = current_time;
         accumulator += frame_time;
 
+        int place_width = 5;  
+        int palce_height = 5; 
+
         if (IsMouseButtonDown(0))
         {
             Vector2 pos = GetMousePosition();
             pos = GetScreenToWorld2D(pos, camera);
 
-            auto [x, y] = sandbox.pos_to_grid(pos.x, pos.y);
-            pos.x = x;
-            pos.y = y;
+            auto [gx, gy] = sandbox.pos_to_grid(pos.x, pos.y);
 
-            sandbox.set_cell(pos.x, pos.y, Cell(
-                CellType::Sand,
-                YELLOW
-            ));
+            for (int dx = -place_width / 2; dx <= place_width / 2; ++dx) {
+                for (int dy = -palce_height / 2; dy <= palce_height / 2; ++dy) {
+                    int x = gx + dx;
+                    int y = gy + dy;
+                    sandbox.set_cell(x, y, Cell(
+                        CellType::Sand,
+                        YELLOW
+                    ));
+                }
+            }
         }
 
         if (IsMouseButtonDown(1))
@@ -50,14 +57,18 @@ void raylib()
             Vector2 pos = GetMousePosition();
             pos = GetScreenToWorld2D(pos, camera);
 
-            auto [x, y] = sandbox.pos_to_grid(pos.x, pos.y);
-            pos.x = x;
-            pos.y = y;
+            auto [gx, gy] = sandbox.pos_to_grid(pos.x, pos.y);
 
-            sandbox.set_cell(pos.x, pos.y, Cell(
-                CellType::Stone,
-                GRAY
-            ));
+            for (int dx = -place_width / 2; dx <= place_width / 2; ++dx) {
+                for (int dy = -palce_height / 2; dy <= palce_height / 2; ++dy) {
+                    int x = gx + dx;
+                    int y = gy + dy;
+                    sandbox.set_cell(x, y, Cell(
+                        CellType::Stone,
+                        GRAY
+                    ));
+                }
+            }
         }
 
         if (IsKeyDown(KEY_D)) movement.x += 128.0f * frame_time;
