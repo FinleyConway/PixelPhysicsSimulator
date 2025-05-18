@@ -1,18 +1,11 @@
-#include <iostream>
-
-#include "cell.h"
 #include "raylib.h"
 
 #include "sandbox.h"
+#include "instrumentor.h"
 
 void raylib()
 {
     InitWindow(1280, 720, "Pixel Physics");
-
-    const int target_fps = 60;
-    const float time_step = 1.0f / target_fps;
-    float accumulator = 0.0f;
-    float previous_time = GetTime();
 
     auto sandbox = Sandbox();
     Vector2 movement = { 0, 0 };
@@ -22,13 +15,9 @@ void raylib()
     camera.rotation = 0.0f;
     camera.zoom = .5f; 
 
-
     while (!WindowShouldClose())
     {
-        float current_time = GetTime();
-        float frame_time = current_time - previous_time;
-        previous_time = current_time;
-        accumulator += frame_time;
+        float frame_time = GetFrameTime();
 
         int place_width = 5;  
         int palce_height = 5; 
@@ -71,45 +60,40 @@ void raylib()
             }
         }
 
-        if (IsKeyDown(KEY_D)) movement.x += 128.0f * frame_time;
-        if (IsKeyDown(KEY_A)) movement.x -= 128.0f * frame_time;
-        if (IsKeyDown(KEY_W)) movement.y -= 128.0f * frame_time;
-        if (IsKeyDown(KEY_S)) movement.y += 128.0f * frame_time;
+        if (IsKeyDown(KEY_D)) movement.x += 512.0f * frame_time;
+        if (IsKeyDown(KEY_A)) movement.x -= 512.0f * frame_time;
+        if (IsKeyDown(KEY_W)) movement.y -= 512.0f * frame_time;
+        if (IsKeyDown(KEY_S)) movement.y += 512.0f * frame_time;
         
         camera.target = movement;
 
-        while (accumulator >= time_step)
+        sandbox.update([&](const Cell& cell, int32_t x, int32_t y)
         {
-            sandbox.update([&](const Cell& cell, int32_t x, int32_t y)
+            if (cell.cell_type == CellType::Stone)
             {
-                if (cell.cell_type == CellType::Stone)
+                sandbox.set_cell(x, y, cell);
+            }
+
+            if (cell.cell_type == CellType::Sand)
+            {
+                if (sandbox.has_empty_cell(x, y + 1))
+                {
+                    sandbox.set_cell(x, y + 1, cell);
+                }
+                else if (sandbox.has_empty_cell(x + 1, y + 1))
+                {
+                    sandbox.set_cell(x + 1, y + 1, cell);
+                }
+                else if (sandbox.has_empty_cell(x - 1, y + 1))
+                {
+                    sandbox.set_cell(x + 1, y + 1, cell);
+                }
+                else 
                 {
                     sandbox.set_cell(x, y, cell);
                 }
-
-                if (cell.cell_type == CellType::Sand)
-                {
-                    if (sandbox.has_empty_cell(x, y + 1))
-                    {
-                        sandbox.set_cell(x, y + 1, cell);
-                    }
-                    else if (sandbox.has_empty_cell(x + 1, y + 1))
-                    {
-                        sandbox.set_cell(x + 1, y + 1, cell);
-                    }
-                    else if (sandbox.has_empty_cell(x - 1, y + 1))
-                    {
-                        sandbox.set_cell(x + 1, y + 1, cell);
-                    }
-                    else 
-                    {
-                        sandbox.set_cell(x, y, cell);
-                    }
-                }
-            });
-
-            accumulator -= time_step;
-        }
+            }
+        });
 
         BeginDrawing();
         ClearBackground(BLANK);
@@ -136,5 +120,9 @@ void raylib()
 
 int main()
 {
+    PROFILE_BEGIN_SESSION("Pixel", "result", 2048);
+
     raylib();
+
+    PROFILE_END_SESSION();
 }

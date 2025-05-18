@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include "instrumentor.h"
 #include "raylib.h"
 
 #include "cell.h"
@@ -122,6 +123,8 @@ private:
 public:
     void flip()
     {
+        PROFILE_FUNCTION();
+
         m_current_grid = m_next_grid;
         m_next_grid.fill(Cell());
 
@@ -130,17 +133,22 @@ public:
 
     void pre_draw()
     {
-        if (!m_is_dirty) return;
+        if (m_dirty_rect.min_x > m_dirty_rect.max_x || m_dirty_rect.min_y > m_dirty_rect.max_y) return;
 
         BeginTextureMode(m_render_texture);
         ClearBackground(BLANK);
 
-        // prehaps see if i can slice up the rendering too?
-        // perhaps define a sissor mode?
-        // tho i should benchmark where the slow downs are happening at!
-        for (size_t x = 0; x < Width; x++)
+        // only draw the changed sections of the chunk
+        int scissor_x = m_dirty_rect.min_x * CellSize;
+        int scissor_y = m_dirty_rect.min_y * CellSize;
+        int scissor_width = (m_dirty_rect.max_x - m_dirty_rect.min_x + 1) * CellSize;
+        int scissor_height = (m_dirty_rect.max_y - m_dirty_rect.min_y + 1) * CellSize;
+
+        BeginScissorMode(scissor_x, scissor_y, scissor_width, scissor_height);
+
+        for (int x = m_dirty_rect.min_x; x <= m_dirty_rect.max_x; x++)
         {
-            for (size_t y = 0; y < Height; y++)
+            for (int y = m_dirty_rect.min_y; y <= m_dirty_rect.max_y; y++)
             {
                 const Cell& current_cell = get_cell(x, y);
 
@@ -148,6 +156,7 @@ public:
             }
         }
 
+        EndScissorMode();
         EndTextureMode();
 
         m_is_dirty = false;

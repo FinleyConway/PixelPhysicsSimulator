@@ -52,9 +52,9 @@ public:
         auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
         auto [local_x, local_y] = grid_to_chunk_local(x, y);
 
-        if (has_chunk(chunk_x, chunk_y))
+        if (m_chunks.contains({ chunk_x, chunk_y }))
         {
-            return get_chunk(chunk_x, chunk_y).has_cell(local_x, local_y);
+            return m_chunks.at({ chunk_x, chunk_y }).has_cell(local_x, local_y);
         }
 
         return false;
@@ -65,26 +65,29 @@ public:
         auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
         auto [local_x, local_y] = grid_to_chunk_local(x, y);
 
-        if (has_chunk(chunk_x, chunk_y))
+        if (m_chunks.contains({ chunk_x, chunk_y }))
         {
-            return get_chunk(chunk_x, chunk_y).is_empty_cell(local_x, local_y);
+            return m_chunks.at({ chunk_x, chunk_y }).is_empty_cell(local_x, local_y);
         }
 
         return true;
     }
 
+public:
     template<typename Func>
     void update(Func update)
     {
+        PROFILE_FUNCTION();
+
         // slow iterating map
         for (auto it = m_chunks.begin(); it != m_chunks.end(); )
         {
             auto& chunk = it->second;
 
             // update the current chunk
-            for (int x = chunk.m_dirty_rect.min_x; x <= chunk.m_dirty_rect.max_x; ++x)
+            for (int x = chunk.m_dirty_rect.min_x; x <= chunk.m_dirty_rect.max_x; x++)
             {
-                for (int y = chunk.m_dirty_rect.min_y; y <= chunk.m_dirty_rect.max_y; ++y)
+                for (int y = chunk.m_dirty_rect.min_y; y <= chunk.m_dirty_rect.max_y; y++)
                 {
                     const Cell& cell = chunk.get_cell(x, y);
 
@@ -103,6 +106,8 @@ public:
 
     void pre_draw()
     {
+        PROFILE_FUNCTION();
+
         // slow iterating map
         // update all dirty chuks
         for (auto& [pos, chunk] : m_chunks)
@@ -113,6 +118,8 @@ public:
 
     void draw()
     {
+        PROFILE_FUNCTION();
+
         // slow iterating map
         for (auto& [pos, chunk] : m_chunks)
         {
@@ -128,8 +135,6 @@ public:
             chunk.debug_draw();
         }
     }
-
-    size_t get_chunk_count() const { return m_chunks.size(); }
 
 public:
     std::pair<int32_t, int32_t> pos_to_grid(float x, float y) const
@@ -165,21 +170,6 @@ private:
         );
 
         return it->second;
-    }
-
-    const CellChunk<Width, Height, CellSize>& get_chunk(int32_t chunk_x, int32_t chunk_y) const
-    {
-        return m_chunks.at({ chunk_x, chunk_y });
-    }
-
-    bool has_chunk(int32_t chunk_x, int32_t chunk_y) const
-    {
-        return m_chunks.contains({ chunk_x, chunk_y });
-    }
-
-    bool remove_chunk(int32_t chunk_x, int32_t chunk_y)
-    {
-        return m_chunks.erase({ chunk_x, chunk_y }) > 0;
     }
 
 private:
