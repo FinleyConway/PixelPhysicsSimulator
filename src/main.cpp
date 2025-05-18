@@ -99,12 +99,11 @@ void raylib()
         ClearBackground(BLANK);
 
         // pre draw
-        sandbox.pre_draw();
+        sandbox.pre_draw(camera);
 
         // within camera draw
         BeginMode2D(camera);
-        sandbox.draw();
-        sandbox.debug_draw();
+        sandbox.draw(camera, true);
         EndMode2D();
 
         // global draw

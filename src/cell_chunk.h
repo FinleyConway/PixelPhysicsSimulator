@@ -58,7 +58,6 @@ public:
         {
             m_next_grid[x + y * Width] = cell;
             set_next_rect(x + y * Width);
-            m_is_dirty = true;
 
             return true;
         }
@@ -125,10 +124,32 @@ public:
     {
         PROFILE_FUNCTION();
 
+        size_t empty_cells = Width * Height;
+        size_t current_empty_cells = 0;
+
         m_current_grid = m_next_grid;
-        m_next_grid.fill(Cell());
+
+        for (size_t i = 0; i < m_next_grid.size(); i++)
+        {
+            if (m_next_grid[i].cell_type == CellType::Empty)
+            {
+                current_empty_cells++;
+            }
+
+            m_next_grid[i] = Cell();
+        }
+
+        if (empty_cells == current_empty_cells)
+        {
+            m_should_die = true;
+        }
 
         flip_rect();
+    }
+
+    bool should_die() const
+    {
+        return m_should_die;
     }
 
     void pre_draw()
@@ -158,8 +179,6 @@ public:
 
         EndScissorMode();
         EndTextureMode();
-
-        m_is_dirty = false;
     }
 
     void draw()
@@ -193,7 +212,7 @@ public:
     }
 
 //private:
-    bool m_is_dirty = true;
+    bool m_should_die = false;
     int32_t m_position_x = 0;
     int32_t m_position_y = 0;
     Rect m_dirty_rect;

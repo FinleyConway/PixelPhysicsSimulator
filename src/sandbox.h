@@ -8,6 +8,7 @@
 
 #include "cell.h"
 #include "cell_chunk.h"
+#include "raylib.h"
 
 // temp, just to get intellisense
 #define Width 64
@@ -98,42 +99,49 @@ public:
                 }
             }
 
-            // update chunk
             chunk.flip();
-            it++;
+
+            if (chunk.should_die())
+            {
+                it = m_chunks.erase(it);
+            }
+            else 
+            {
+                it++;
+            }
         }
     }
 
-    void pre_draw()
+    void pre_draw(const Camera2D& camera)
     {
         PROFILE_FUNCTION();
 
-        // slow iterating map
-        // update all dirty chuks
-        for (auto& [pos, chunk] : m_chunks)
+        handle_chunk_culling(camera, [&](int x, int y)
         {
-            chunk.pre_draw();
-        }
+            if (m_chunks.contains({ x, y }))
+            {
+                auto& chunk = m_chunks.at({ x, y });
+
+                chunk.pre_draw();
+            }
+        });
     }
 
-    void draw()
+    void draw(const Camera2D& camera, bool debug = false)
     {
         PROFILE_FUNCTION();
 
-        // slow iterating map
-        for (auto& [pos, chunk] : m_chunks)
+        handle_chunk_culling(camera, [&](int x, int y)
         {
-            chunk.draw();
-        }
-    }
+            if (m_chunks.contains({ x, y }))
+            {
+                auto& chunk = m_chunks.at({ x, y });
 
-    void debug_draw()
-    {
-        // slow iterating map
-        for (auto& [pos, chunk] : m_chunks)
-        {
-            chunk.debug_draw();
-        }
+                chunk.draw();
+
+                if (debug) chunk.debug_draw();
+            }
+        });
     }
 
 public:
@@ -161,6 +169,14 @@ public:
         };
     }
 
+    std::pair<int32_t, int32_t> world_to_chunk(float x, float y) const
+    {
+        return {
+            static_cast<int32_t>(std::floor(x / (Width * CellSize))),
+            static_cast<int32_t>(std::floor(y / (Height * CellSize)))
+        };
+    }
+
 private:
     CellChunk<Width, Height, CellSize>& get_or_create_chunk(int32_t chunk_x, int32_t chunk_y)
     {
@@ -170,6 +186,37 @@ private:
         );
 
         return it->second;
+    }
+
+    Rectangle handle_camera_view(const Camera2D& camera)
+    {
+        Vector2 topLeft = GetScreenToWorld2D({ 0, 0 }, camera);
+        Vector2 bottomRight = GetScreenToWorld2D({ (float)GetScreenWidth(), (float)GetScreenHeight() }, camera);
+
+        return {
+            topLeft.x,
+            topLeft.y,
+            bottomRight.x - topLeft.x,
+            bottomRight.y - topLeft.y,
+        };
+    }
+
+    template<typename Func>
+    void handle_chunk_culling(const Camera2D& camera, Func draw)
+    {
+        if (m_chunks.empty()) return;
+
+        auto view = handle_camera_view(camera);
+        auto [min_chunk_x, min_chunk_y] = world_to_chunk(view.x, view.y);
+        auto [max_chunk_x, max_chunk_y] = world_to_chunk(view.x + view.width, view.y + view.height);
+
+        for (int x = min_chunk_x; x <= max_chunk_x; x++)
+        {
+            for (int y = min_chunk_y; y <= max_chunk_y; y++)
+            {
+                draw(x, y);
+            }
+        }
     }
 
 private:
