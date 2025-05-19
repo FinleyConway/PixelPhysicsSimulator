@@ -72,7 +72,7 @@ void raylib()
         BeginDrawing();
         ClearBackground(BLANK);
 
-        sandbox.pre_draw();
+        sandbox.pre_draw(camera);
 
         // within camera draw
         BeginMode2D(camera);

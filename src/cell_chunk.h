@@ -3,9 +3,11 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdio>
 
 #include "raylib.h"
 
+#include "instrumentor.h"
 #include "point.h"
 #include "int_rect.h"
 
@@ -33,6 +35,7 @@ public:
 			TWidth * TCellSize, 
 			THeight * TCellSize
 		);
+        m_changes.reserve(TWidth * THeight);
     }
 
     Point get_position() const
@@ -48,15 +51,6 @@ public:
     void set_cell(Point position, const Cell& cell)
     {
         int index = position.x + position.y * TWidth;
-
-        if (m_grid[index].type == CellType::Empty && cell.type != CellType::Empty)
-        {
-            m_filled_cells++;
-        }
-        else if (m_grid[index].type != CellType::Empty && cell.type == CellType::Empty)
-        {
-            m_filled_cells--;
-        }
 
         m_changes.emplace_back(index, cell);
         m_drawn = false;
@@ -79,7 +73,11 @@ public:
 
     void update()
     {
+        PROFILE_FUNCTION();
+
         if (m_changes.empty()) return;
+
+        int m_filled_cells = 0;
 
         update_rect();
 
@@ -88,11 +86,26 @@ public:
             m_grid[index] = cell;
         }
 
+        for (size_t i = 0; i < m_grid.size(); i++)
+        {
+            if (m_grid[i].type == CellType::Empty)
+            {
+                m_filled_cells++;
+            }
+        }
+
+        if (m_filled_cells == TWidth * THeight)
+        {
+            m_should_delete = true;
+        }
+
         m_changes.clear();
     }
 
     void pre_draw()
     {
+        PROFILE_FUNCTION();
+
         if (m_drawn) return;
 
         BeginTextureMode(m_render_texture);
@@ -115,6 +128,8 @@ public:
 
     void draw(bool debug = false)
     {
+        PROFILE_FUNCTION();
+
         // draw the chunk texture
         Rectangle sourceRec = {
             0.0f,                        
@@ -145,7 +160,7 @@ public:
 
     bool should_remove() const
     {
-        return m_filled_cells == 0;
+        return m_should_delete;
     }
 
 private:
@@ -180,8 +195,8 @@ private:
 
 private:
     Point m_position;
-    int m_filled_cells = 0;
     bool m_drawn = false;
+    bool m_should_delete = false;
 
     IntRect m_next_rect;
     IntRect m_current_rect;

@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 
+#include "instrumentor.h"
 #include "point.h"
 #include "raylib.h"
 
@@ -57,13 +58,15 @@ public:
             return m_chunk_lookup.at({ chunk_x, chunk_y })->is_empty(local_pos);
         }
 
-        return false;
+        return true;
     }
 
 public:
     template<typename Func>
     void update(Func update)
     {
+        PROFILE_FUNCTION();
+
         for (auto* chunk : m_chunks)
         {
             update_chunk(chunk, update);
@@ -91,19 +94,43 @@ public:
         }
     }
 
-    void pre_draw()
+    void pre_draw(const Camera2D& camera)
     {
+        PROFILE_FUNCTION();
+
+        Rectangle view = handle_camera_view(camera);
+
         for (auto* chunk : m_chunks)
         {
-            chunk->pre_draw();
+            const Point position = chunk->get_position();
+            const Point size = { TWidth, THeight };
+
+            Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
+
+            if (CheckCollisionRecs(view, chunkRect))
+            {
+                chunk->pre_draw(); 
+            }
         }
     }
 
     void draw(const Camera2D& camera, bool debug = false)
     {
+        PROFILE_FUNCTION();
+
+        Rectangle view = handle_camera_view(camera);
+
         for (auto* chunk : m_chunks)
         {
-            chunk->draw(debug);
+            const Point position = chunk->get_position();
+            const Point size = { TWidth, THeight };
+
+            Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
+
+            if (CheckCollisionRecs(view, chunkRect))
+            {
+                chunk->draw(debug);  
+            }
         }
     }
 
@@ -143,6 +170,8 @@ public:
 private:
     Chunk* create_chunk(int chunk_x, int chunk_y)
     {
+        PROFILE_FUNCTION();
+
         int position_x = chunk_x * TWidth * TCellSize;
         int position_y = chunk_y * THeight * TCellSize;
 
@@ -167,6 +196,8 @@ private:
     template<typename Func>
     void update_chunk(Chunk* chunk, Func update)
     {
+        PROFILE_FUNCTION();
+
         const auto [position_x, position_y] = chunk->get_position();
         const IntRect& rect = chunk->get_current_rect();
 
@@ -184,6 +215,19 @@ private:
         }
 
         chunk->update();
+    }
+
+    Rectangle handle_camera_view(const Camera2D& camera)
+    {
+        Vector2 topLeft = GetScreenToWorld2D({ 0, 0 }, camera);
+        Vector2 bottomRight = GetScreenToWorld2D({ (float)GetScreenWidth(), (float)GetScreenHeight() }, camera);
+
+        return {
+            topLeft.x,
+            topLeft.y,
+            bottomRight.x - topLeft.x,
+            bottomRight.y - topLeft.y,
+        };
     }
 
 private:
