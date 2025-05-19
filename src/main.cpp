@@ -13,7 +13,7 @@ void raylib()
     camera.target = { 0, 0 };
     camera.offset = { 0, 0 };
     camera.rotation = 0.0f;
-    camera.zoom = .5f; 
+    camera.zoom = 1.f; 
 
     while (!WindowShouldClose())
     {
@@ -24,30 +24,25 @@ void raylib()
         if (IsKeyDown(KEY_W)) movement.y -= 512.0f * frame_time;
         if (IsKeyDown(KEY_S)) movement.y += 512.0f * frame_time;
         
-        if (IsKeyDown(KEY_SPACE))
+        const int brush_radius = 2;
+
+        if (IsKeyDown(KEY_SPACE) || IsKeyDown(KEY_C))
         {
             Vector2 pos = GetMousePosition();
             pos = GetScreenToWorld2D(pos, camera);
 
             auto [gx, gy] = sandbox.pos_to_grid(pos.x, pos.y);
 
-            sandbox.set_cell(gx, gy, {
-                CellType::Stone,
-                GRAY
-            });
-        }
+            CellType type = IsKeyDown(KEY_SPACE) ? CellType::Stone : CellType::Sand;
+            Color color = IsKeyDown(KEY_SPACE) ? GRAY : YELLOW;
 
-        if (IsKeyDown(KEY_C))
-        {
-            Vector2 pos = GetMousePosition();
-            pos = GetScreenToWorld2D(pos, camera);
-
-            auto [gx, gy] = sandbox.pos_to_grid(pos.x, pos.y);
-
-            sandbox.set_cell(gx, gy, {
-                CellType::Sand,
-                YELLOW
-            });
+            for (int y = -brush_radius; y <= brush_radius; ++y)
+            {
+                for (int x = -brush_radius; x <= brush_radius; ++x)
+                {
+                    sandbox.set_cell(gx + x, gy + y, { type, color });
+                }
+            }
         }
 
         camera.target = movement;
@@ -56,15 +51,17 @@ void raylib()
         {
             if (cell.type == CellType::Sand)
             {
+                int dir = rand() % 2 ? -1 : 1;
+
                 if (sandbox.is_empty(x, y + 1))
                 {
                     sandbox.set_cell(x, y, { CellType::Empty, BLANK });
                     sandbox.set_cell(x, y + 1, cell);
                 }
-                else if (sandbox.is_empty(x + 1, y))
+                else if (sandbox.is_empty(x + dir, y + 1))
                 {
                     sandbox.set_cell(x, y, { CellType::Empty, BLANK });
-                    sandbox.set_cell(x + 1, y, cell);
+                    sandbox.set_cell(x + dir, y + 1, cell);
                 }
             }
         });
@@ -82,6 +79,7 @@ void raylib()
         // global draw
         DrawFPS(0, 0);
         DrawText(TextFormat("FrameTime: %.5f", GetFrameTime() * 1000), 0, 20, 20, RED);
+        DrawText(TextFormat("Chunks Active: %d", sandbox.get_total_chunks()), 0, 40, 20, GREEN);
 
 
         EndDrawing();

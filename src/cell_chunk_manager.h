@@ -61,6 +61,11 @@ public:
         return true;
     }
 
+    size_t get_total_chunks() const
+    {
+        return m_chunks.size();
+    }
+
 public:
     template<typename Func>
     void update(Func update)
@@ -103,7 +108,7 @@ public:
         for (auto* chunk : m_chunks)
         {
             const Point position = chunk->get_position();
-            const Point size = { TWidth, THeight };
+            const Point size = { TWidth * TCellSize, THeight * TCellSize };
 
             Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
 

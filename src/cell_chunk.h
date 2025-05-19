@@ -28,14 +28,20 @@ template<int TWidth, int THeight, int TCellSize>
 class CellChunk
 {
 public:
-    CellChunk(Point position) : 
+    CellChunk(Point position) :
         m_position(position)
     {
-        m_render_texture = LoadRenderTexture(
-			TWidth * TCellSize, 
-			THeight * TCellSize
-		);
+        m_render_texture = LoadRenderTexture(TWidth * TCellSize, THeight * TCellSize);
         m_changes.reserve(TWidth * THeight);
+
+        reset_rect(m_final_rect);
+        reset_rect(m_intermediate_rect);
+    }
+
+
+    ~CellChunk()
+    {
+        UnloadRenderTexture(m_render_texture);
     }
 
     Point get_position() const
@@ -68,7 +74,7 @@ public:
 
     const IntRect& get_current_rect() const
     {
-        return m_current_rect;
+        return m_dirty_rect;
     }
 
     void update()
@@ -108,22 +114,31 @@ public:
 
         if (m_drawn) return;
 
-        BeginTextureMode(m_render_texture);
-        ClearBackground(BLANK);
+        int scissor_x = m_final_rect.min_x * TCellSize;
+        int scissor_y = m_final_rect.min_y * TCellSize;
+        int scissor_width = (m_final_rect.max_x - m_final_rect.min_x + 1) * TCellSize;
+        int scissor_height = (m_final_rect.max_y - m_final_rect.min_y + 1) * TCellSize;
 
-        for (int x = 0; x < TWidth; x++)
+        if (scissor_width > 0 && scissor_height > 0)
         {
-            for (int y = 0; y < THeight; y++)
+            BeginTextureMode(m_render_texture);
+            BeginScissorMode(scissor_x, scissor_y, scissor_width, scissor_height);
+            ClearBackground(BLANK);
+
+            for (int x = m_final_rect.min_x; x <= m_final_rect.max_x; x++)
             {
-                const Cell& current_cell = get_cell({ x, y });
-
-                DrawRectangle(x * TCellSize, y * TCellSize, TCellSize, TCellSize, current_cell.colour);
+                for (int y = m_final_rect.min_y; y <= m_final_rect.max_y; y++)
+                {
+                    const Cell& current_cell = get_cell({ x, y });
+                    DrawRectangle(x * TCellSize, y * TCellSize, TCellSize, TCellSize, current_cell.colour);
+                }
             }
+
+            EndScissorMode();
+            EndTextureMode();
+
+            m_drawn = true;
         }
-
-        EndTextureMode();
-
-        m_drawn = true;
     }
 
     void draw(bool debug = false)
@@ -149,11 +164,18 @@ public:
         {
             DrawRectangleLines(m_position.x, m_position.y, TWidth * TCellSize, THeight * TCellSize, GREEN);
             DrawRectangleLines(
-                m_position.x + m_current_rect.min_x * TCellSize,
-                m_position.y + m_current_rect.min_y * TCellSize,
-                (m_current_rect.max_x - m_current_rect.min_x + 1) * TCellSize,
-                (m_current_rect.max_y - m_current_rect.min_y + 1) * TCellSize,
+                m_position.x + m_dirty_rect.min_x * TCellSize,
+                m_position.y + m_dirty_rect.min_y * TCellSize,
+                (m_dirty_rect.max_x - m_dirty_rect.min_x + 1) * TCellSize,
+                (m_dirty_rect.max_y - m_dirty_rect.min_y + 1) * TCellSize,
                 RED
+            );
+            DrawRectangleLines(
+                m_position.x + m_final_rect.min_x * TCellSize,
+                m_position.y + m_final_rect.min_y * TCellSize,
+                (m_final_rect.max_x - m_final_rect.min_x + 1) * TCellSize,
+                (m_final_rect.max_y - m_final_rect.min_y + 1) * TCellSize,
+                WHITE
             );
         }
     }
@@ -174,23 +196,42 @@ private:
         int max_x = std::min(x + 2, TWidth - 1);
         int max_y = std::min(y + 2, THeight - 1);
 
-        m_next_rect.min_x = std::min(m_next_rect.min_x, min_x);
-        m_next_rect.min_y = std::min(m_next_rect.min_y, min_y);
-        m_next_rect.max_x = std::max(m_next_rect.max_x, max_x);
-        m_next_rect.max_y = std::max(m_next_rect.max_y, max_y);
+        m_intermediate_rect.min_x = std::min(m_intermediate_rect.min_x, min_x);
+        m_intermediate_rect.min_y = std::min(m_intermediate_rect.min_y, min_y);
+        m_intermediate_rect.max_x = std::max(m_intermediate_rect.max_x, max_x);
+        m_intermediate_rect.max_y = std::max(m_intermediate_rect.max_y, max_y);
     }
 
     void update_rect()
     {
-        m_current_rect.min_x = m_next_rect.min_x;
-        m_current_rect.min_y = m_next_rect.min_y;
-        m_current_rect.max_x = m_next_rect.max_x;
-        m_current_rect.max_y = m_next_rect.max_y;
+        m_dirty_rect = m_intermediate_rect;
 
-        m_next_rect.min_x = TWidth;
-        m_next_rect.min_y = THeight;
-        m_next_rect.max_x = -1;
-        m_next_rect.max_y = -1;
+        reset_rect(m_final_rect);
+
+        // generate a new rendering rect 
+        for (int y = 0; y < THeight; y++)
+        {
+            for (int x = 0; x < TWidth; x++)
+            {
+                if (get_cell({ x, y }).type != CellType::Empty)
+                {
+                    m_final_rect.min_x = std::min(m_final_rect.min_x, x);
+                    m_final_rect.min_y = std::min(m_final_rect.min_y, y);
+                    m_final_rect.max_x = std::max(m_final_rect.max_x, x);
+                    m_final_rect.max_y = std::max(m_final_rect.max_y, y);
+                }
+            }
+        }
+
+        reset_rect(m_intermediate_rect);
+    }
+
+    void reset_rect(IntRect& rect)
+    {
+        rect.min_x = TWidth;
+        rect.min_y = THeight;
+        rect.max_x = -1;
+        rect.max_y = -1;
     }
 
 private:
@@ -198,8 +239,9 @@ private:
     bool m_drawn = false;
     bool m_should_delete = false;
 
-    IntRect m_next_rect;
-    IntRect m_current_rect;
+    IntRect m_intermediate_rect;
+    IntRect m_dirty_rect;
+    IntRect m_final_rect;
     std::vector<std::pair<int, Cell>> m_changes;
     std::array<Cell, TWidth * THeight> m_grid;
     RenderTexture2D m_render_texture;
