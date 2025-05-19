@@ -2,27 +2,12 @@
 
 #include <cmath>
 #include <vector>
-#include <utility>
-#include <functional>
 #include <unordered_map>
 
+#include "point.h"
 #include "raylib.h"
 
 #include "cell_chunk.h"
-
-template<typename T1, typename T2>
-struct std::hash<std::pair<T1, T2>>
-{
-    size_t operator()(std::pair<T1, T2> p) const noexcept
-    {
-        // https://stackoverflow.com/a/55083395
-        size_t hash = std::hash<T1>()(p.first);
-        hash <<= sizeof(size_t) * 4;
-        hash ^= std::hash<T2>()(p.second);
-
-        return std::hash<size_t>()(hash);
-    }
-};
 
 #define TWidth 64
 #define THeight 64
@@ -46,30 +31,33 @@ public:
     const Cell& get_cell(int x, int y)
     {
         auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        auto [local_x, local_y] = grid_to_chunk_local(x, y);
+        auto local_pos = grid_to_chunk_local(x, y);
 
-        return get_chunk(chunk_x, chunk_y)->get_cell(local_x, local_y);
+        return get_chunk(chunk_x, chunk_y)->get_cell(local_pos);
     }    
 
     void set_cell(int x, int y, const Cell& cell)
     {
         auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        auto [local_x, local_y] = grid_to_chunk_local(x, y);
+        auto local_pos = grid_to_chunk_local(x, y);
 
         Chunk* chunk = get_chunk(chunk_x, chunk_y);
         
-        chunk->set_cell(local_x, local_y, cell);
-        chunk->keep_alive(local_x, local_y);
+        chunk->set_cell(local_pos, cell);
+        chunk->keep_alive(local_pos);
     }
 
-    void stay_cell(int x, int y, const Cell& cell)
+    bool is_empty(int x, int y) const
     {
         auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        auto [local_x, local_y] = grid_to_chunk_local(x, y);
+        auto local_pos = grid_to_chunk_local(x, y);
 
-        Chunk* chunk = get_chunk(chunk_x, chunk_y);
-        
-        chunk->set_cell(local_x, local_y, cell);
+        if (m_chunk_lookup.contains({ chunk_x, chunk_y }))
+        {
+            return m_chunk_lookup.at({ chunk_x, chunk_y })->is_empty(local_pos);
+        }
+
+        return false;
     }
 
 public:
@@ -120,7 +108,7 @@ public:
     }
 
 public:
-    std::pair<int, int> pos_to_grid(float x, float y) const
+    Point pos_to_grid(float x, float y) const
     {
         return { 
             static_cast<int>(std::floor(x / TCellSize)), 
@@ -128,7 +116,7 @@ public:
         };
     }    
 
-    std::pair<int, int> grid_to_chunk(int x, int y) const
+    Point grid_to_chunk(int x, int y) const
     {
         return { 
             x >= 0 ? x / TWidth : (x - TWidth + 1) / TWidth,
@@ -136,7 +124,7 @@ public:
         };
     }
 
-    std::pair<int, int> grid_to_chunk_local(int x, int y) const
+    Point grid_to_chunk_local(int x, int y) const
     {
         return {
             ((x % TWidth + TWidth) % TWidth),
@@ -144,7 +132,7 @@ public:
         };
     }
 
-    std::pair<int, int> world_to_chunk(float x, float y) const
+    Point world_to_chunk(float x, float y) const
     {
         return {
             static_cast<int>(std::floor(x / (TWidth * TCellSize))),
@@ -158,7 +146,7 @@ private:
         int position_x = chunk_x * TWidth * TCellSize;
         int position_y = chunk_y * THeight * TCellSize;
 
-        auto* chunk = new Chunk(position_x, position_y);
+        auto* chunk = new Chunk({ position_x, position_y });
 
         m_chunk_lookup.try_emplace({ chunk_x, chunk_y }, chunk);
         m_chunks.emplace_back(chunk);
@@ -186,7 +174,7 @@ private:
         {
             for (int y = rect.min_y; y <= rect.max_y; y++)
             {
-                const Cell& cell = chunk->get_cell(x, y);
+                const Cell& cell = chunk->get_cell({ x, y });
 
                 int world_x = x + (position_x / TCellSize);
                 int world_y = y + (position_y / TCellSize);
@@ -199,6 +187,6 @@ private:
     }
 
 private:
-    std::unordered_map<std::pair<int, int>, Chunk*> m_chunk_lookup;
+    std::unordered_map<Point, Chunk*> m_chunk_lookup;
     std::vector<Chunk*> m_chunks;
 };

@@ -37,13 +37,35 @@ void raylib()
             });
         }
 
+        if (IsKeyDown(KEY_C))
+        {
+            Vector2 pos = GetMousePosition();
+            pos = GetScreenToWorld2D(pos, camera);
+
+            auto [gx, gy] = sandbox.pos_to_grid(pos.x, pos.y);
+
+            sandbox.set_cell(gx, gy, {
+                CellType::Sand,
+                YELLOW
+            });
+        }
+
         camera.target = movement;
 
         sandbox.update([&](const Cell& cell, int x, int y)
         {
-            if (cell.type == CellType::Stone)
+            if (cell.type == CellType::Sand)
             {
-                sandbox.stay_cell(x, y, cell);
+                if (sandbox.is_empty(x, y + 1))
+                {
+                    sandbox.set_cell(x, y, { CellType::Empty, BLANK });
+                    sandbox.set_cell(x, y + 1, cell);
+                }
+                else if (sandbox.is_empty(x + 1, y))
+                {
+                    sandbox.set_cell(x, y, { CellType::Empty, BLANK });
+                    sandbox.set_cell(x + 1, y, cell);
+                }
             }
         });
 

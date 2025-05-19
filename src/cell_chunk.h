@@ -6,6 +6,9 @@
 
 #include "raylib.h"
 
+#include "point.h"
+#include "int_rect.h"
+
 enum class CellType
 {
     Empty = 0,
@@ -19,21 +22,12 @@ struct Cell
     Color colour = BLANK;
 };
 
-struct IntRect
-{
-    int min_x = 0; 
-    int min_y = 0;
-    int max_x = 0;
-    int max_y = 0;
-};
-
 template<int TWidth, int THeight, int TCellSize>
 class CellChunk
 {
 public:
-    CellChunk(int position_x, int position_y) : 
-        m_position_x(position_x),
-        m_position_y(position_y)
+    CellChunk(Point position) : 
+        m_position(position)
     {
         m_render_texture = LoadRenderTexture(
 			TWidth * TCellSize, 
@@ -41,28 +35,41 @@ public:
 		);
     }
 
-    std::pair<int, int> get_position() const
+    Point get_position() const
     {
-        return {
-            m_position_x,
-            m_position_y
-        };
+        return m_position;
     }
 
-    const Cell& get_cell(int x, int y) const
+    const Cell& get_cell(Point position) const
     {
-        return m_current_grid[x + y * TWidth];
+        return m_grid[position.x + position.y * TWidth];
     }
 
-    void set_cell(int x, int y, const Cell& cell)
+    void set_cell(Point position, const Cell& cell)
     {
-        m_next_grid[x + y * TWidth] = cell;
+        int index = position.x + position.y * TWidth;
+
+        if (m_grid[index].type == CellType::Empty && cell.type != CellType::Empty)
+        {
+            m_filled_cells++;
+        }
+        else if (m_grid[index].type != CellType::Empty && cell.type == CellType::Empty)
+        {
+            m_filled_cells--;
+        }
+
+        m_changes.emplace_back(index, cell);
+        m_drawn = false;
     }
 
-    void keep_alive(int x, int y)
+    bool is_empty(Point position) const
     {
-        m_should_update = true;
-        set_next_rect(x + y * TWidth);
+        return m_grid[position.x + position.y * TWidth].type == CellType::Empty;
+    }
+
+    void keep_alive(Point position)
+    {
+        set_next_rect(position.x + position.y * TWidth);
     }
 
     const IntRect& get_current_rect() const
@@ -72,63 +79,38 @@ public:
 
     void update()
     {
-        if (m_should_update)
+        if (m_changes.empty()) return;
+
+        update_rect();
+
+        for (auto& [index, cell] : m_changes)
         {
-            int empty_cell_amount = TWidth * THeight;
-            int empty_cells = 0;
-
-            m_current_grid = m_next_grid;
-
-            // search and reset next grid
-            for (auto& cell : m_next_grid)
-            {
-                if (cell.type == CellType::Empty)
-                {
-                    empty_cells++;
-                }
-
-                cell = Cell();
-            }
-
-            // is chunk empty?
-            if (empty_cells == empty_cell_amount)
-            {
-                // flag chunk to be removed
-                m_should_remove = true;
-            }
-
-            update_rect();
-            m_should_update = false;
+            m_grid[index] = cell;
         }
+
+        m_changes.clear();
     }
 
     void pre_draw()
     {
-        if (m_current_rect.min_x > m_current_rect.max_x || m_current_rect.min_y > m_current_rect.max_y) return;
+        if (m_drawn) return;
 
         BeginTextureMode(m_render_texture);
         ClearBackground(BLANK);
 
-        // only draw the changed sections of the chunk
-        int scissor_x = m_current_rect.min_x * TCellSize;
-        int scissor_y = m_current_rect.min_y * TCellSize;
-        int scissor_width = (m_current_rect.max_x - m_current_rect.min_x + 1) * TCellSize;
-        int scissor_height = (m_current_rect.max_y - m_current_rect.min_y + 1) * TCellSize;
-
-        BeginScissorMode(scissor_x, scissor_y, scissor_width, scissor_height);
-
-        for (int x = m_current_rect.min_x; x <= m_current_rect.max_x; x++)
+        for (int x = 0; x < TWidth; x++)
         {
-            for (int y = m_current_rect.min_y; y <= m_current_rect.max_y; y++)
+            for (int y = 0; y < THeight; y++)
             {
-                const Cell& current_cell = get_cell(x, y);
+                const Cell& current_cell = get_cell({ x, y });
 
                 DrawRectangle(x * TCellSize, y * TCellSize, TCellSize, TCellSize, current_cell.colour);
             }
         }
 
-        EndScissorMode();
         EndTextureMode();
+
+        m_drawn = true;
     }
 
     void draw(bool debug = false)
@@ -142,18 +124,18 @@ public:
         };
 
         Vector2 position = {
-            static_cast<float>(m_position_x),
-            static_cast<float>(m_position_y)
+            static_cast<float>(m_position.x),
+            static_cast<float>(m_position.y)
         };
 
         DrawTextureRec(m_render_texture.texture, sourceRec, position, WHITE);
 
         if (debug)
         {
-            DrawRectangleLines(m_position_x, m_position_y, TWidth * TCellSize, THeight * TCellSize, GREEN);
+            DrawRectangleLines(m_position.x, m_position.y, TWidth * TCellSize, THeight * TCellSize, GREEN);
             DrawRectangleLines(
-                m_position_x + m_current_rect.min_x * TCellSize,
-                m_position_y + m_current_rect.min_y * TCellSize,
+                m_position.x + m_current_rect.min_x * TCellSize,
+                m_position.y + m_current_rect.min_y * TCellSize,
                 (m_current_rect.max_x - m_current_rect.min_x + 1) * TCellSize,
                 (m_current_rect.max_y - m_current_rect.min_y + 1) * TCellSize,
                 RED
@@ -163,11 +145,11 @@ public:
 
     bool should_remove() const
     {
-        return m_should_remove;
+        return m_filled_cells == 0;
     }
 
 private:
-    void set_next_rect(size_t index)
+    void set_next_rect(int index)
     {
         int x = index % TWidth;
         int y = index / TWidth;
@@ -197,14 +179,13 @@ private:
     }
 
 private:
-    int m_position_x = 0;
-    int m_position_y = 0;
-    bool m_should_remove = false;
-    bool m_should_update = false;
+    Point m_position;
+    int m_filled_cells = 0;
+    bool m_drawn = false;
 
     IntRect m_next_rect;
     IntRect m_current_rect;
-    std::array<Cell, TWidth * THeight> m_next_grid;
-    std::array<Cell, TWidth * THeight> m_current_grid;
+    std::vector<std::pair<int, Cell>> m_changes;
+    std::array<Cell, TWidth * THeight> m_grid;
     RenderTexture2D m_render_texture;
 };
