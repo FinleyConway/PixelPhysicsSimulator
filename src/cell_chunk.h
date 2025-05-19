@@ -2,178 +2,128 @@
 
 #include <algorithm>
 #include <array>
-#include <cstdint>
-#include <cstring>
+#include <cstddef>
 
-#include "instrumentor.h"
 #include "raylib.h"
 
-#include "cell.h"
-
-struct Rect
+enum class CellType
 {
-    int32_t min_x = 0;
-    int32_t min_y = 0;
-    int32_t max_x = 0;
-    int32_t max_y = 0;
+    Empty = 0,
+    Sand,
+    Stone,
 };
 
-template<size_t Width, size_t Height, size_t CellSize>
-class CellChunk 
+struct Cell
+{
+    CellType type = CellType::Empty;
+    Color colour = BLANK;
+};
+
+struct IntRect
+{
+    int min_x = 0; 
+    int min_y = 0;
+    int max_x = 0;
+    int max_y = 0;
+};
+
+template<int TWidth, int THeight, int TCellSize>
+class CellChunk
 {
 public:
-    CellChunk(int32_t position_x, int32_t position_y) :
+    CellChunk(int position_x, int position_y) : 
         m_position_x(position_x),
         m_position_y(position_y)
     {
         m_render_texture = LoadRenderTexture(
-			Width * CellSize, 
-			Height * CellSize
+			TWidth * TCellSize, 
+			THeight * TCellSize
 		);
     }
 
-    ~CellChunk()
+    std::pair<int, int> get_position() const
     {
-        UnloadRenderTexture(m_render_texture);
+        return {
+            m_position_x,
+            m_position_y
+        };
     }
 
-    bool in_bounds(size_t x, size_t y) const
+    const Cell& get_cell(int x, int y) const
     {
-        return x < Width && y < Height;
+        return m_current_grid[x + y * TWidth];
     }
 
-    const Cell& get_cell(size_t x, size_t y) const
+    void set_cell(int x, int y, const Cell& cell)
     {
-        return m_current_grid[x + y * Width];
+        m_next_grid[x + y * TWidth] = cell;
     }
 
-    const Cell& get_temp_cell(size_t x, size_t y) const
+    void keep_alive(int x, int y)
     {
-        return m_next_grid[x + y * Width];
+        m_should_update = true;
+        set_next_rect(x + y * TWidth);
     }
 
-    bool set_cell(size_t x, size_t y, const Cell& cell)
+    const IntRect& get_current_rect() const
     {
-        if (in_bounds(x, y))
+        return m_current_rect;
+    }
+
+    void update()
+    {
+        if (m_should_update)
         {
-            m_next_grid[x + y * Width] = cell;
-            set_next_rect(x + y * Width);
+            int empty_cell_amount = TWidth * THeight;
+            int empty_cells = 0;
 
-            return true;
-        }
+            m_current_grid = m_next_grid;
 
-        return false;
-    }
-
-    bool has_cell(size_t x, size_t y) const
-    {
-        if (in_bounds(x, y))
-        {
-            return m_current_grid[x + y * Width].cell_type != CellType::Empty;
-        }
-
-        return false;
-    }
-
-    bool is_empty_cell(size_t x, size_t y) const
-    {
-        if (in_bounds(x, y))
-        {
-            bool current = m_current_grid[x + y * Width].cell_type == CellType::Empty;
-            bool next = m_next_grid[x + y * Width].cell_type == CellType::Empty;
-
-            return current && next;
-        }
-
-        return false;
-    }
-
-private:
-    void set_next_rect(size_t index)
-    {
-        int32_t x = index % Width;
-        int32_t y = index / Width;
-
-        int32_t min_x = std::max(x - 2, 0);
-        int32_t min_y = std::max(y - 2, 0);
-        int32_t max_x = std::min<int32_t>(x + 2, Width - 1);
-        int32_t max_y = std::min<int32_t>(y + 2, Height - 1);
-
-        m_working_rect.min_x = std::min(m_working_rect.min_x, min_x);
-        m_working_rect.min_y = std::min(m_working_rect.min_y, min_y);
-        m_working_rect.max_x = std::max(m_working_rect.max_x, max_x);
-        m_working_rect.max_y = std::max(m_working_rect.max_y, max_y);
-    }
-
-
-    void flip_rect()
-    {
-        m_dirty_rect.min_x = m_working_rect.min_x;
-        m_dirty_rect.min_y = m_working_rect.min_y;
-        m_dirty_rect.max_x = m_working_rect.max_x;
-        m_dirty_rect.max_y = m_working_rect.max_y;
-
-        m_working_rect.min_x = Width;
-        m_working_rect.min_y = Height;
-        m_working_rect.max_x = -1;
-        m_working_rect.max_y = -1;
-    }
-
-public:
-    void flip()
-    {
-        PROFILE_FUNCTION();
-
-        size_t empty_cells = Width * Height;
-        size_t current_empty_cells = 0;
-
-        m_current_grid = m_next_grid;
-
-        for (size_t i = 0; i < m_next_grid.size(); i++)
-        {
-            if (m_next_grid[i].cell_type == CellType::Empty)
+            // search and reset next grid
+            for (auto& cell : m_next_grid)
             {
-                current_empty_cells++;
+                if (cell.type == CellType::Empty)
+                {
+                    empty_cells++;
+                }
+
+                cell = Cell();
             }
 
-            m_next_grid[i] = Cell();
+            // is chunk empty?
+            if (empty_cells == empty_cell_amount)
+            {
+                // flag chunk to be removed
+                m_should_remove = true;
+            }
+
+            update_rect();
+            m_should_update = false;
         }
-
-        if (empty_cells == current_empty_cells)
-        {
-            m_should_die = true;
-        }
-
-        flip_rect();
-    }
-
-    bool should_die() const
-    {
-        return m_should_die;
     }
 
     void pre_draw()
     {
-        if (m_dirty_rect.min_x > m_dirty_rect.max_x || m_dirty_rect.min_y > m_dirty_rect.max_y) return;
+        if (m_current_rect.min_x > m_current_rect.max_x || m_current_rect.min_y > m_current_rect.max_y) return;
 
         BeginTextureMode(m_render_texture);
         ClearBackground(BLANK);
 
         // only draw the changed sections of the chunk
-        int scissor_x = m_dirty_rect.min_x * CellSize;
-        int scissor_y = m_dirty_rect.min_y * CellSize;
-        int scissor_width = (m_dirty_rect.max_x - m_dirty_rect.min_x + 1) * CellSize;
-        int scissor_height = (m_dirty_rect.max_y - m_dirty_rect.min_y + 1) * CellSize;
+        int scissor_x = m_current_rect.min_x * TCellSize;
+        int scissor_y = m_current_rect.min_y * TCellSize;
+        int scissor_width = (m_current_rect.max_x - m_current_rect.min_x + 1) * TCellSize;
+        int scissor_height = (m_current_rect.max_y - m_current_rect.min_y + 1) * TCellSize;
 
         BeginScissorMode(scissor_x, scissor_y, scissor_width, scissor_height);
 
-        for (int x = m_dirty_rect.min_x; x <= m_dirty_rect.max_x; x++)
+        for (int x = m_current_rect.min_x; x <= m_current_rect.max_x; x++)
         {
-            for (int y = m_dirty_rect.min_y; y <= m_dirty_rect.max_y; y++)
+            for (int y = m_current_rect.min_y; y <= m_current_rect.max_y; y++)
             {
                 const Cell& current_cell = get_cell(x, y);
 
-                DrawRectangle(x * CellSize, y * CellSize, CellSize, CellSize, current_cell.colour);
+                DrawRectangle(x * TCellSize, y * TCellSize, TCellSize, TCellSize, current_cell.colour);
             }
         }
 
@@ -181,44 +131,80 @@ public:
         EndTextureMode();
     }
 
-    void draw()
+    void draw(bool debug = false)
     {
         // draw the chunk texture
         Rectangle sourceRec = {
             0.0f,                        
             0.0f,                        
-            (float)m_render_texture.texture.width,
-            -(float)m_render_texture.texture.height // flip texture
+            static_cast<float>(m_render_texture.texture.width),
+            static_cast<float>(-m_render_texture.texture.height) // flip texture
         };
 
         Vector2 position = {
-            (float)m_position_x,
-            (float)m_position_y
+            static_cast<float>(m_position_x),
+            static_cast<float>(m_position_y)
         };
 
         DrawTextureRec(m_render_texture.texture, sourceRec, position, WHITE);
+
+        if (debug)
+        {
+            DrawRectangleLines(m_position_x, m_position_y, TWidth * TCellSize, THeight * TCellSize, GREEN);
+            DrawRectangleLines(
+                m_position_x + m_current_rect.min_x * TCellSize,
+                m_position_y + m_current_rect.min_y * TCellSize,
+                (m_current_rect.max_x - m_current_rect.min_x + 1) * TCellSize,
+                (m_current_rect.max_y - m_current_rect.min_y + 1) * TCellSize,
+                RED
+            );
+        }
     }
 
-    void debug_draw()
+    bool should_remove() const
     {
-        DrawRectangleLines(m_position_x, m_position_y, Width * CellSize, Height * CellSize, GREEN);
-        DrawRectangleLines(
-        m_position_x + m_dirty_rect.min_x * CellSize,
-        m_position_y + m_dirty_rect.min_y * CellSize,
-        (m_dirty_rect.max_x - m_dirty_rect.min_x) * CellSize,
-        (m_dirty_rect.max_y - m_dirty_rect.min_y) * CellSize,
-        RED
-    );
+        return m_should_remove;
     }
 
-//private:
-    bool m_should_die = false;
-    int32_t m_position_x = 0;
-    int32_t m_position_y = 0;
-    Rect m_dirty_rect;
-    Rect m_working_rect;
+private:
+    void set_next_rect(size_t index)
+    {
+        int x = index % TWidth;
+        int y = index / TWidth;
 
+        int min_x = std::max(x - 2, 0);
+        int min_y = std::max(y - 2, 0);
+        int max_x = std::min(x + 2, TWidth - 1);
+        int max_y = std::min(y + 2, THeight - 1);
+
+        m_next_rect.min_x = std::min(m_next_rect.min_x, min_x);
+        m_next_rect.min_y = std::min(m_next_rect.min_y, min_y);
+        m_next_rect.max_x = std::max(m_next_rect.max_x, max_x);
+        m_next_rect.max_y = std::max(m_next_rect.max_y, max_y);
+    }
+
+    void update_rect()
+    {
+        m_current_rect.min_x = m_next_rect.min_x;
+        m_current_rect.min_y = m_next_rect.min_y;
+        m_current_rect.max_x = m_next_rect.max_x;
+        m_current_rect.max_y = m_next_rect.max_y;
+
+        m_next_rect.min_x = TWidth;
+        m_next_rect.min_y = THeight;
+        m_next_rect.max_x = -1;
+        m_next_rect.max_y = -1;
+    }
+
+private:
+    int m_position_x = 0;
+    int m_position_y = 0;
+    bool m_should_remove = false;
+    bool m_should_update = false;
+
+    IntRect m_next_rect;
+    IntRect m_current_rect;
+    std::array<Cell, TWidth * THeight> m_next_grid;
+    std::array<Cell, TWidth * THeight> m_current_grid;
     RenderTexture2D m_render_texture;
-    std::array<Cell, Width * Height> m_current_grid;
-    std::array<Cell, Width * Height> m_next_grid; 
 };
