@@ -114,31 +114,22 @@ public:
 
         if (m_drawn) return;
 
-        int scissor_x = m_final_rect.min_x * TCellSize;
-        int scissor_y = m_final_rect.min_y * TCellSize;
-        int scissor_width = (m_final_rect.max_x - m_final_rect.min_x + 1) * TCellSize;
-        int scissor_height = (m_final_rect.max_y - m_final_rect.min_y + 1) * TCellSize;
+        BeginTextureMode(m_render_texture);
+        ClearBackground(BLANK);
 
-        if (scissor_width > 0 && scissor_height > 0)
+        for (int x = m_final_rect.min_x; x <= m_final_rect.max_x; x++)
         {
-            BeginTextureMode(m_render_texture);
-            BeginScissorMode(scissor_x, scissor_y, scissor_width, scissor_height);
-            ClearBackground(BLANK);
-
-            for (int x = m_final_rect.min_x; x <= m_final_rect.max_x; x++)
+            for (int y = m_final_rect.min_y; y <= m_final_rect.max_y; y++)
             {
-                for (int y = m_final_rect.min_y; y <= m_final_rect.max_y; y++)
-                {
-                    const Cell& current_cell = get_cell({ x, y });
-                    DrawRectangle(x * TCellSize, y * TCellSize, TCellSize, TCellSize, current_cell.colour);
-                }
+                const Cell& current_cell = get_cell({ x, y });
+                
+                DrawRectangle(x * TCellSize, y * TCellSize, TCellSize, TCellSize, current_cell.colour);
             }
-
-            EndScissorMode();
-            EndTextureMode();
-
-            m_drawn = true;
         }
+
+        EndTextureMode();
+
+        m_drawn = true;
     }
 
     void draw(bool debug = false)

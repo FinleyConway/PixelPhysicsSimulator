@@ -103,14 +103,13 @@ public:
     {
         PROFILE_FUNCTION();
 
-        Rectangle view = handle_camera_view(camera);
+        const Rectangle view = handle_camera_view(camera);
 
         for (auto* chunk : m_chunks)
         {
             const Point position = chunk->get_position();
             const Point size = { TWidth * TCellSize, THeight * TCellSize };
-
-            Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
+            const Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
 
             if (CheckCollisionRecs(view, chunkRect))
             {
@@ -123,14 +122,13 @@ public:
     {
         PROFILE_FUNCTION();
 
-        Rectangle view = handle_camera_view(camera);
+        const Rectangle view = handle_camera_view(camera);
 
         for (auto* chunk : m_chunks)
         {
             const Point position = chunk->get_position();
-            const Point size = { TWidth, THeight };
-
-            Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
+            const Point size = { TWidth * TCellSize, THeight * TCellSize };
+            const Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
 
             if (CheckCollisionRecs(view, chunkRect))
             {
