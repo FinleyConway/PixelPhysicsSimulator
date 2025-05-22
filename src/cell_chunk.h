@@ -55,9 +55,6 @@ public:
         int index = position.x + position.y * TWidth;
 
         m_changes.emplace_back(index, cell);
-        m_drawn = false;
-
-        set_next_rect(index);
     }
 
     bool is_empty(Point position) const
@@ -83,6 +80,9 @@ public:
             if (dest.type == CellType::Empty && cell.type != CellType::Empty)
             {
                 m_filled_cells++;
+                m_drawn = false;
+
+                set_next_rect(index);
             }
             else if (dest.type != CellType::Empty && cell.type == CellType::Empty)
             {
@@ -99,23 +99,6 @@ public:
     {
         m_dirty_rect = m_intermediate_rect;
 
-        reset_rect(m_final_rect);
-
-        // generate a new rendering rect 
-        for (int y = 0; y < THeight; y++)
-        {
-            for (int x = 0; x < TWidth; x++)
-            {
-                if (get_cell({ x, y }).type != CellType::Empty)
-                {
-                    m_final_rect.min_x = std::min(m_final_rect.min_x, x);
-                    m_final_rect.min_y = std::min(m_final_rect.min_y, y);
-                    m_final_rect.max_x = std::max(m_final_rect.max_x, x);
-                    m_final_rect.max_y = std::max(m_final_rect.max_y, y);
-                }
-            }
-        }
-
         reset_rect(m_intermediate_rect);
     }
 
@@ -124,6 +107,8 @@ public:
         PROFILE_FUNCTION();
 
         if (m_drawn) return;
+
+        generate_bounds();
 
         BeginTextureMode(m_render_texture);
         ClearBackground(BLANK);
@@ -134,7 +119,10 @@ public:
             {
                 const Cell& current_cell = get_cell({ x, y });
                 
-                DrawRectangle(x * TCellSize, y * TCellSize, TCellSize, TCellSize, current_cell.colour);
+                if (current_cell.type != CellType::Empty)
+                {
+                    DrawRectangle(x * TCellSize, y * TCellSize, TCellSize, TCellSize, current_cell.colour);
+                }
             }
         }
 
@@ -203,6 +191,25 @@ private:
         m_intermediate_rect.min_y = std::min(m_intermediate_rect.min_y, min_y);
         m_intermediate_rect.max_x = std::max(m_intermediate_rect.max_x, max_x);
         m_intermediate_rect.max_y = std::max(m_intermediate_rect.max_y, max_y);
+    }
+
+    void generate_bounds() 
+    {
+        reset_rect(m_final_rect);
+
+        for (int y = 0; y < THeight; y++)
+        {
+            for (int x = 0; x < TWidth; x++)
+            {
+                if (get_cell({ x, y }).type != CellType::Empty)
+                {
+                    m_final_rect.min_x = std::min(m_final_rect.min_x, x);
+                    m_final_rect.min_y = std::min(m_final_rect.min_y, y);
+                    m_final_rect.max_x = std::max(m_final_rect.max_x, x);
+                    m_final_rect.max_y = std::max(m_final_rect.max_y, y);
+                }
+            }
+        }
     }
 
     void reset_rect(IntRect& rect)

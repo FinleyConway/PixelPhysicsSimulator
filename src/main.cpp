@@ -13,7 +13,7 @@ void raylib()
     camera.target = { 0, 0 };
     camera.offset = { 0, 0 };
     camera.rotation = 0.0f;
-    camera.zoom = 1.f; 
+    camera.zoom = 0.5f; 
 
     while (!WindowShouldClose())
     {
