@@ -72,30 +72,21 @@ public:
     {
         PROFILE_FUNCTION();
 
+        remove_empty_chunks();
+
         for (auto* chunk : m_chunks)
         {
             update_chunk(chunk, update);
         }
 
-        for (auto it = m_chunks.begin(); it != m_chunks.end();)
+        for (auto* chunk : m_chunks)
         {
-            Chunk* chunk = *it;
+            chunk->apply_cells();
+        }
 
-            if (chunk->should_remove())
-            {
-                auto [px, py] = chunk->get_position();
-                auto [wx, wy] = world_to_chunk(px, py);
-
-                m_chunk_lookup.erase({ wx, wy });
-                it = m_chunks.erase(it);
-
-                delete chunk;
-                chunk = nullptr;
-            }
-            else 
-            {
-                it++;
-            }
+        for (auto* chunk : m_chunks)
+        {
+            chunk->update_rect();
         }
     }
 
@@ -196,6 +187,30 @@ private:
         return create_chunk(chunk_x, chunk_y); 
     }
 
+    void remove_empty_chunks()
+    {
+        for (auto it = m_chunks.begin(); it != m_chunks.end();)
+        {
+            Chunk* chunk = *it;
+
+            if (chunk->should_remove())
+            {
+                auto [px, py] = chunk->get_position();
+                auto [wx, wy] = world_to_chunk(px, py);
+
+                m_chunk_lookup.erase({ wx, wy });
+                it = m_chunks.erase(it);
+
+                delete chunk;
+                chunk = nullptr;
+            }
+            else 
+            {
+                it++;
+            }
+        }
+    }
+
     template<typename Func>
     void update_chunk(Chunk* chunk, Func update)
     {
@@ -216,8 +231,6 @@ private:
                 update(cell, world_x, world_y);
             }
         }
-
-        chunk->update();
     }
 
     Rectangle handle_camera_view(const Camera2D& camera)

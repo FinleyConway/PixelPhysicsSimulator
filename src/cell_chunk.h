@@ -77,15 +77,13 @@ public:
         return m_dirty_rect;
     }
 
-    void update()
+    void apply_cells()
     {
         PROFILE_FUNCTION();
 
         if (m_changes.empty()) return;
 
         int m_filled_cells = 0;
-
-        update_rect();
 
         for (auto& [index, cell] : m_changes)
         {
@@ -106,6 +104,30 @@ public:
         }
 
         m_changes.clear();
+    }
+
+    void update_rect()
+    {
+        m_dirty_rect = m_intermediate_rect;
+
+        reset_rect(m_final_rect);
+
+        // generate a new rendering rect 
+        for (int y = 0; y < THeight; y++)
+        {
+            for (int x = 0; x < TWidth; x++)
+            {
+                if (get_cell({ x, y }).type != CellType::Empty)
+                {
+                    m_final_rect.min_x = std::min(m_final_rect.min_x, x);
+                    m_final_rect.min_y = std::min(m_final_rect.min_y, y);
+                    m_final_rect.max_x = std::max(m_final_rect.max_x, x);
+                    m_final_rect.max_y = std::max(m_final_rect.max_y, y);
+                }
+            }
+        }
+
+        reset_rect(m_intermediate_rect);
     }
 
     void pre_draw()
@@ -159,7 +181,7 @@ public:
                 m_position.y + m_dirty_rect.min_y * TCellSize,
                 (m_dirty_rect.max_x - m_dirty_rect.min_x + 1) * TCellSize,
                 (m_dirty_rect.max_y - m_dirty_rect.min_y + 1) * TCellSize,
-                RED
+                    (m_dirty_rect.min_x > m_dirty_rect.max_x || m_dirty_rect.min_y > m_dirty_rect.max_y) ? BLUE : RED
             );
             DrawRectangleLines(
                 m_position.x + m_final_rect.min_x * TCellSize,
@@ -191,30 +213,6 @@ private:
         m_intermediate_rect.min_y = std::min(m_intermediate_rect.min_y, min_y);
         m_intermediate_rect.max_x = std::max(m_intermediate_rect.max_x, max_x);
         m_intermediate_rect.max_y = std::max(m_intermediate_rect.max_y, max_y);
-    }
-
-    void update_rect()
-    {
-        m_dirty_rect = m_intermediate_rect;
-
-        reset_rect(m_final_rect);
-
-        // generate a new rendering rect 
-        for (int y = 0; y < THeight; y++)
-        {
-            for (int x = 0; x < TWidth; x++)
-            {
-                if (get_cell({ x, y }).type != CellType::Empty)
-                {
-                    m_final_rect.min_x = std::min(m_final_rect.min_x, x);
-                    m_final_rect.min_y = std::min(m_final_rect.min_y, y);
-                    m_final_rect.max_x = std::max(m_final_rect.max_x, x);
-                    m_final_rect.max_y = std::max(m_final_rect.max_y, y);
-                }
-            }
-        }
-
-        reset_rect(m_intermediate_rect);
     }
 
     void reset_rect(IntRect& rect)

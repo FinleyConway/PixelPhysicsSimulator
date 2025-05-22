@@ -90,9 +90,9 @@ void raylib()
 
 int main()
 {
-    PROFILE_BEGIN_SESSION("Pixel", "result", 2048);
+    //PROFILE_BEGIN_SESSION("Pixel", "result", 2048);
 
     raylib();
 
-    PROFILE_END_SESSION();
+    //PROFILE_END_SESSION();
 }
