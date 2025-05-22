@@ -11,6 +11,14 @@ struct Point
     {
         return x == other.x && y == other.y;
     }
+
+    Point operator+(Point other) const
+    {
+        return {
+            x + other.x,
+            y + other.y
+        };
+    }
 };
 
 template<>
