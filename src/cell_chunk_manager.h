@@ -42,10 +42,7 @@ public:
         auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
         auto local_pos = grid_to_chunk_local(x, y);
 
-        Chunk* chunk = get_chunk(chunk_x, chunk_y);
-        
-        chunk->set_cell(local_pos, cell);
-        chunk->keep_alive(local_pos);
+        get_chunk(chunk_x, chunk_y)->set_cell(local_pos, cell);
     }
 
     bool is_empty(int x, int y) const
@@ -72,8 +69,6 @@ public:
     {
         PROFILE_FUNCTION();
 
-        remove_empty_chunks();
-
         for (auto* chunk : m_chunks)
         {
             update_chunk(chunk, update);
@@ -88,6 +83,8 @@ public:
         {
             chunk->update_rect();
         }
+
+        remove_empty_chunks();
     }
 
     void pre_draw(const Camera2D& camera)

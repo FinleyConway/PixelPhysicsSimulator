@@ -2,8 +2,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>
-#include <cstdio>
 
 #include "raylib.h"
 
@@ -28,8 +26,7 @@ template<int TWidth, int THeight, int TCellSize>
 class CellChunk
 {
 public:
-    CellChunk(Point position) :
-        m_position(position)
+    CellChunk(Point position) : m_position(position)
     {
         m_render_texture = LoadRenderTexture(TWidth * TCellSize, THeight * TCellSize);
         m_changes.reserve(TWidth * THeight);
@@ -37,7 +34,6 @@ public:
         reset_rect(m_final_rect);
         reset_rect(m_intermediate_rect);
     }
-
 
     ~CellChunk()
     {
@@ -60,16 +56,13 @@ public:
 
         m_changes.emplace_back(index, cell);
         m_drawn = false;
+
+        set_next_rect(index);
     }
 
     bool is_empty(Point position) const
     {
         return m_grid[position.x + position.y * TWidth].type == CellType::Empty;
-    }
-
-    void keep_alive(Point position)
-    {
-        set_next_rect(position.x + position.y * TWidth);
     }
 
     const IntRect& get_current_rect() const
@@ -83,24 +76,20 @@ public:
 
         if (m_changes.empty()) return;
 
-        int m_filled_cells = 0;
-
         for (auto& [index, cell] : m_changes)
         {
-            m_grid[index] = cell;
-        }
+            const Cell& dest = m_grid[index];
 
-        for (size_t i = 0; i < m_grid.size(); i++)
-        {
-            if (m_grid[i].type == CellType::Empty)
+            if (dest.type == CellType::Empty && cell.type != CellType::Empty)
             {
                 m_filled_cells++;
             }
-        }
+            else if (dest.type != CellType::Empty && cell.type == CellType::Empty)
+            {
+                m_filled_cells--;
+            }
 
-        if (m_filled_cells == TWidth * THeight)
-        {
-            m_should_delete = true;
+            m_grid[index] = cell;
         }
 
         m_changes.clear();
@@ -190,12 +179,13 @@ public:
                 (m_final_rect.max_y - m_final_rect.min_y + 1) * TCellSize,
                 WHITE
             );
+            DrawText(TextFormat("%d", m_filled_cells), m_position.x, m_position.y, 20, YELLOW);
         }
     }
 
     bool should_remove() const
     {
-        return m_should_delete;
+        return m_filled_cells == 0;
     }
 
 private:
@@ -225,12 +215,13 @@ private:
 
 private:
     Point m_position;
+    int m_filled_cells = 0;
+
     bool m_drawn = false;
-    bool m_should_delete = false;
+    IntRect m_final_rect;
 
     IntRect m_intermediate_rect;
     IntRect m_dirty_rect;
-    IntRect m_final_rect;
     std::vector<std::pair<int, Cell>> m_changes;
     std::array<Cell, TWidth * THeight> m_grid;
     RenderTexture2D m_render_texture;
