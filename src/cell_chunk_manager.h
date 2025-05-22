@@ -12,7 +12,7 @@
 
 #define TWidth 64
 #define THeight 64
-#define TCellSize  4
+#define TCellSize 4
 
 //template<int TWidth, int THeight, int TCellSize>
 class CellChunkManager
@@ -32,7 +32,7 @@ public:
     const Cell& get_cell(int x, int y)
     {
         auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        auto local_pos = grid_to_chunk_local(x, y);
+        const Point local_pos = grid_to_chunk_local(x, y);
 
         return get_chunk(chunk_x, chunk_y)->get_cell(local_pos);
     }    
@@ -40,15 +40,35 @@ public:
     void set_cell(int x, int y, const Cell& cell)
     {
         auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        auto local_pos = grid_to_chunk_local(x, y);
+        const Point local_pos = grid_to_chunk_local(x, y);
 
-        get_chunk(chunk_x, chunk_y)->set_cell(local_pos, cell);
+        auto* chunk = get_chunk(chunk_x, chunk_y);
+        Point notify;
+
+        if (local_pos.x == 0)           notify.x = -1;
+        if (local_pos.x == TWidth - 1)  notify.x = +1;
+        if (local_pos.y == 0)           notify.y = -1;
+        if (local_pos.y == THeight - 1) notify.y = +1;
+
+        if (notify.x != 0)                  wake_up_chunk(x + notify.x, y);
+        if (notify.y != 0)                  wake_up_chunk(x, y + notify.y);
+        if (notify.x != 0 && notify.y != 0) wake_up_chunk(x + notify.x, y + notify.y);
+
+        chunk->set_cell(local_pos, cell);
+    }
+
+    void wake_up_chunk(int x, int y)
+    {
+        auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
+        const Point local_pos = grid_to_chunk_local(x, y);
+
+        get_chunk(chunk_x, chunk_y)->wake_up(local_pos);
     }
 
     bool is_empty(int x, int y) const
     {
         auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        auto local_pos = grid_to_chunk_local(x, y);
+        const Point local_pos = grid_to_chunk_local(x, y);
 
         if (m_chunk_lookup.contains({ chunk_x, chunk_y }))
         {

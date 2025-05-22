@@ -55,6 +55,14 @@ public:
         int index = position.x + position.y * TWidth;
 
         m_changes.emplace_back(index, cell);
+        m_drawn = false;
+
+        set_next_rect(index);
+    }
+
+    void wake_up(Point position)
+    {
+        set_next_rect(position.x + position.y * TWidth);
     }
 
     bool is_empty(Point position) const
@@ -80,9 +88,6 @@ public:
             if (dest.type == CellType::Empty && cell.type != CellType::Empty)
             {
                 m_filled_cells++;
-                m_drawn = false;
-
-                set_next_rect(index);
             }
             else if (dest.type != CellType::Empty && cell.type == CellType::Empty)
             {
