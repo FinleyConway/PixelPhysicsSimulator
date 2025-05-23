@@ -81,7 +81,7 @@ public:
 
         if (m_changes.empty()) return;
 
-        for (auto& [index, cell] : m_changes)
+        for (const auto& [index, cell] : m_changes)
         {
             const Cell& dest = m_grid[index];
 
@@ -136,7 +136,7 @@ public:
         m_drawn = true;
     }
 
-    void draw(bool debug = false)
+    void draw(bool debug) const
     {
         PROFILE_FUNCTION();
 

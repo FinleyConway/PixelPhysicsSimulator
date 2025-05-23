@@ -23,48 +23,48 @@ public:
 
     const Cell& get_cell(int x, int y)
     {
-        auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        const Point local_pos = grid_to_chunk_local(x, y);
+        const Point chunk_position = grid_to_chunk(x, y);
+        const Point local_position = grid_to_chunk_local(x, y);
 
-        return get_chunk(chunk_x, chunk_y)->get_cell(local_pos);
+        return get_chunk(chunk_position)->get_cell(local_position);
     }    
 
     void set_cell(int x, int y, const Cell& cell)
     {
-        auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        const Point local_pos = grid_to_chunk_local(x, y);
+        const Point chunk_position = grid_to_chunk(x, y);
+        const Point local_position = grid_to_chunk_local(x, y);
 
-        auto* chunk = get_chunk(chunk_x, chunk_y);
+        auto* chunk = get_chunk(chunk_position);
         Point notify;
 
-        if (local_pos.x == 0)           notify.x = -1;
-        if (local_pos.x == c_width - 1)  notify.x = +1;
-        if (local_pos.y == 0)           notify.y = -1;
-        if (local_pos.y == c_height - 1) notify.y = +1;
+        if (local_position.x == 0)            notify.x = -1;
+        if (local_position.x == c_width - 1)  notify.x = +1;
+        if (local_position.y == 0)            notify.y = -1;
+        if (local_position.y == c_height - 1) notify.y = +1;
 
         if (notify.x != 0)                  wake_up_chunk(x + notify.x, y);
         if (notify.y != 0)                  wake_up_chunk(x, y + notify.y);
         if (notify.x != 0 && notify.y != 0) wake_up_chunk(x + notify.x, y + notify.y);
 
-        chunk->set_cell(local_pos, cell);
+        chunk->set_cell(local_position, cell);
     }
 
     void wake_up_chunk(int x, int y)
     {
-        auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        const Point local_pos = grid_to_chunk_local(x, y);
+        const Point chunk_position = grid_to_chunk(x, y);
+        const Point local_position = grid_to_chunk_local(x, y);
 
-        get_chunk(chunk_x, chunk_y)->wake_up(local_pos);
+        get_chunk(chunk_position)->wake_up(local_position);
     }
 
     bool is_empty(int x, int y) const
     {
-        auto [chunk_x, chunk_y] = grid_to_chunk(x, y);
-        const Point local_pos = grid_to_chunk_local(x, y);
+        const Point chunk_position = grid_to_chunk(x, y);
+        const Point local_position = grid_to_chunk_local(x, y);
 
-        if (m_chunk_lookup.contains({ chunk_x, chunk_y }))
+        if (m_chunk_lookup.contains(chunk_position))
         {
-            return m_chunk_lookup.at({ chunk_x, chunk_y })->is_empty(local_pos);
+            return m_chunk_lookup.at(chunk_position)->is_empty(local_position);
         }
 
         return true;
@@ -107,13 +107,9 @@ public:
 
         for (auto* chunk : m_chunks)
         {
-            const Point position = chunk->get_position();
-            const Point size = { c_width * c_cell_size, c_height * c_cell_size };
-            const Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
-
-            if (CheckCollisionRecs(view, chunkRect))
+            if (is_chunk_in_view(chunk, view))
             {
-                chunk->pre_draw(); 
+                chunk->pre_draw();
             }
         }
     }
@@ -124,15 +120,11 @@ public:
 
         const Rectangle view = handle_camera_view(camera);
 
-        for (auto* chunk : m_chunks)
+        for (const auto* chunk : m_chunks)
         {
-            const Point position = chunk->get_position();
-            const Point size = { c_width * c_cell_size, c_height * c_cell_size };
-            const Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
-
-            if (CheckCollisionRecs(view, chunkRect))
+            if (is_chunk_in_view(chunk, view))
             {
-                chunk->draw(debug);  
+                chunk->draw(debug);
             }
         }
     }
@@ -171,29 +163,31 @@ public:
     }
 
 private:
-    Chunk* create_chunk(int chunk_x, int chunk_y)
+    Chunk* create_chunk(Point chunk_position)
     {
         PROFILE_FUNCTION();
 
-        int position_x = chunk_x * c_width * c_cell_size;
-        int position_y = chunk_y * c_height * c_cell_size;
+        const Point position = {
+            chunk_position.x * c_width * c_cell_size,
+            chunk_position.y * c_height * c_cell_size,
+        };
 
-        auto* chunk = new Chunk({ position_x, position_y });
+        auto* chunk = new Chunk(position);
 
-        m_chunk_lookup.try_emplace({ chunk_x, chunk_y }, chunk);
+        m_chunk_lookup.try_emplace(chunk_position, chunk);
         m_chunks.emplace_back(chunk);
 
         return chunk;
     }
 
-    Chunk* get_chunk(int chunk_x, int chunk_y)
+    Chunk* get_chunk(Point chunk_position)
     {
-        if (m_chunk_lookup.contains({ chunk_x, chunk_y }))
+        if (m_chunk_lookup.contains(chunk_position))
         {
-            return m_chunk_lookup.at({ chunk_x, chunk_y });
+            return m_chunk_lookup.at(chunk_position);
         }
 
-        return create_chunk(chunk_x, chunk_y); 
+        return create_chunk(chunk_position); 
     }
 
     void remove_empty_chunks()
@@ -204,10 +198,10 @@ private:
 
             if (chunk->should_remove())
             {
-                auto [px, py] = chunk->get_position();
-                auto [wx, wy] = world_to_chunk(px, py);
+                const Point position = chunk->get_position();
+                const Point chunk_position = world_to_chunk(position.x, position.y);
 
-                m_chunk_lookup.erase({ wx, wy });
+                m_chunk_lookup.erase(chunk_position);
                 it = m_chunks.erase(it);
 
                 delete chunk;
@@ -225,7 +219,7 @@ private:
     {
         PROFILE_FUNCTION();
 
-        const auto [position_x, position_y] = chunk->get_position();
+        const Point position = chunk->get_position();
         const IntRect& rect = chunk->get_current_rect();
 
         for (int x = rect.min_x; x <= rect.max_x; x++)
@@ -233,11 +227,12 @@ private:
             for (int y = rect.min_y; y <= rect.max_y; y++)
             {
                 const Cell& cell = chunk->get_cell({ x, y });
+                const Point world_position = {
+                    x + (position.x / c_cell_size),
+                    y + (position.y / c_cell_size)
+                };
 
-                int world_x = x + (position_x / c_cell_size);
-                int world_y = y + (position_y / c_cell_size);
-
-                update(cell, world_x, world_y);
+                update(cell, world_position.x, world_position.y);
             }
         }
     }
@@ -253,6 +248,20 @@ private:
             bottomRight.x - topLeft.x,
             bottomRight.y - topLeft.y,
         };
+    }
+
+    bool is_chunk_in_view(const Chunk* chunk, const Rectangle& view)
+    {
+        const Point position = chunk->get_position();
+        const Point size = { c_width * c_cell_size, c_height * c_cell_size };
+        const Rectangle chunkRect = {
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(size.x),
+            static_cast<float>(size.y)
+        };
+
+        return CheckCollisionRecs(view, chunkRect);
     }
 
 private:
