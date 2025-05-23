@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <string>
 
 struct Point
 {
@@ -10,6 +11,11 @@ struct Point
     bool operator==(Point other) const
     {
         return x == other.x && y == other.y;
+    }
+
+    std::string to_str() const
+    {
+        return "Point(" + std::to_string(x) + ", " + std::to_string(y) + ")";
     }
 };
 

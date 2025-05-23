@@ -76,29 +76,6 @@ public:
     }
 
 public:
-    // template<typename Func>
-    // void update(Func update)
-    // {
-    //     PROFILE_FUNCTION();
-
-    //     for (auto* chunk : m_chunks)
-    //     {
-    //         update_chunk(chunk, update);
-    //     }
-
-    //     for (auto* chunk : m_chunks)
-    //     {
-    //         chunk->apply_cells();
-    //     }
-
-    //     for (auto* chunk : m_chunks)
-    //     {
-    //         chunk->update_rect();
-    //     }
-
-    //     remove_empty_chunks();
-    // }
-
     template<typename Func>
     void update()
     {
@@ -106,7 +83,6 @@ public:
 
         for (auto* chunk : m_chunks)
         {
-            //update_chunk(chunk, update);
             auto tmp = Func(*this, chunk);
             tmp.update_chunk();
         }
@@ -196,6 +172,8 @@ private:
             chunk_position.x * c_width * c_cell_size,
             chunk_position.y * c_height * c_cell_size,
         };
+          
+        TraceLog(LOG_INFO, "Chunk new position: %s", position.to_str().c_str());
 
         auto* chunk = new Chunk(position);
 
@@ -235,29 +213,6 @@ private:
             else 
             {
                 it++;
-            }
-        }
-    }
-
-    template<typename Func>
-    void update_chunk(Chunk* chunk, Func update)
-    {
-        PROFILE_FUNCTION();
-
-        const Point position = chunk->get_position();
-        const IntRect& rect = chunk->get_current_rect();
-
-        for (int x = rect.min_x; x <= rect.max_x; x++)
-        {
-            for (int y = rect.min_y; y <= rect.max_y; y++)
-            {
-                const Cell& cell = chunk->get_cell({ x, y });
-                const Point world_position = {
-                    x + (position.x / c_cell_size),
-                    y + (position.y / c_cell_size)
-                };
-
-                update(cell, world_position.x, world_position.y);
             }
         }
     }

@@ -40,22 +40,22 @@ protected:
 
     void set_cell(int x, int y, const Cell& cell)
     {
-        if (m_chunk->in_bounds({ x, y }))
-        {
-            m_chunk->set_cell({ x, y }, cell);
+        // if (m_chunk->in_bounds({ x, y }))
+        // {
+        //     m_chunk->set_cell({ x, y }, cell);
 
-            return;
-        }
+        //     return;
+        // }
 
         m_manager.set_cell(x, y, cell);
     }
 
     bool is_empty(int x, int y) const
     {
-        if (m_chunk->in_bounds({ x, y }))
-        {
-            return m_chunk->is_empty({ x, y });
-        }
+        // if (m_chunk->in_bounds({ x, y }))
+        // {
+        //     return m_chunk->is_empty({ x, y });
+        // }
 
         return m_manager.is_empty(x, y);
     }

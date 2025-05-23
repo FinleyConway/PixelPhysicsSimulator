@@ -1,3 +1,4 @@
+#include "chunk.h"
 #include "chunk_worker.h"
 #include "raylib.h"
 
@@ -72,26 +73,18 @@ void raylib()
             }
         }
 
+        if (IsKeyDown(KEY_V))
+        {
+            Vector2 pos = GetMousePosition();
+            pos = GetScreenToWorld2D(pos, camera);
+
+            auto [gx, gy] = sandbox.pos_to_grid(pos.x, pos.y);
+
+            sandbox.set_cell(gx, gy, { CellType::Empty, BLANK });
+        }
+
         camera.target = movement;
 
-        // sandbox.update([&](const Cell& cell, int x, int y)
-        // {
-        //     if (cell.type == CellType::Sand)
-        //     {
-        //         int dir = rand() % 2 ? -1 : 1;
-
-        //         if (sandbox.is_empty(x, y + 1))
-        //         {
-        //             sandbox.set_cell(x, y, { CellType::Empty, BLANK });
-        //             sandbox.set_cell(x, y + 1, cell);
-        //         }
-        //         else if (sandbox.is_empty(x + dir, y + 1))
-        //         {
-        //             sandbox.set_cell(x, y, { CellType::Empty, BLANK });
-        //             sandbox.set_cell(x + dir, y + 1, cell);
-        //         }
-        //     }
-        // });
         sandbox.update<Worker>();
 
         BeginDrawing();
