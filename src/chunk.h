@@ -60,6 +60,11 @@ public:
         set_next_rect(index);
     }
 
+    bool in_bounds(Point position) const
+    {
+        return position.x < c_width && position.y < c_height;
+    }
+
     void wake_up(Point position)
     {
         set_next_rect(get_index(position));

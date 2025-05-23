@@ -76,14 +76,39 @@ public:
     }
 
 public:
+    // template<typename Func>
+    // void update(Func update)
+    // {
+    //     PROFILE_FUNCTION();
+
+    //     for (auto* chunk : m_chunks)
+    //     {
+    //         update_chunk(chunk, update);
+    //     }
+
+    //     for (auto* chunk : m_chunks)
+    //     {
+    //         chunk->apply_cells();
+    //     }
+
+    //     for (auto* chunk : m_chunks)
+    //     {
+    //         chunk->update_rect();
+    //     }
+
+    //     remove_empty_chunks();
+    // }
+
     template<typename Func>
-    void update(Func update)
+    void update()
     {
         PROFILE_FUNCTION();
 
         for (auto* chunk : m_chunks)
         {
-            update_chunk(chunk, update);
+            //update_chunk(chunk, update);
+            auto tmp = Func(*this, chunk);
+            tmp.update_chunk();
         }
 
         for (auto* chunk : m_chunks)

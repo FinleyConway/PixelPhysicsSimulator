@@ -1,7 +1,34 @@
+#include "chunk_worker.h"
 #include "raylib.h"
 
 #include "chunk_manager.h"
 #include "instrumentor.h"
+
+class Worker : public ChunkWorker
+{
+public:
+    Worker(ChunkManager& manager, Chunk* chunk) : ChunkWorker(manager, chunk) { }
+
+protected:
+    void update_cell(const Cell& cell, int x, int y)
+    {
+        if (cell.type == CellType::Sand)
+        {
+            int dir = rand() % 2 ? -1 : 1;
+
+            if (is_empty(x, y + 1))
+            {
+                set_cell(x, y, { CellType::Empty, BLANK });
+                set_cell(x, y + 1, cell);
+            }
+            else if (is_empty(x + dir, y + 1))
+            {
+                set_cell(x, y, { CellType::Empty, BLANK });
+                set_cell(x + dir, y + 1, cell);
+            }
+        }
+    }
+};
 
 void raylib()
 {
@@ -47,24 +74,25 @@ void raylib()
 
         camera.target = movement;
 
-        sandbox.update([&](const Cell& cell, int x, int y)
-        {
-            if (cell.type == CellType::Sand)
-            {
-                int dir = rand() % 2 ? -1 : 1;
+        // sandbox.update([&](const Cell& cell, int x, int y)
+        // {
+        //     if (cell.type == CellType::Sand)
+        //     {
+        //         int dir = rand() % 2 ? -1 : 1;
 
-                if (sandbox.is_empty(x, y + 1))
-                {
-                    sandbox.set_cell(x, y, { CellType::Empty, BLANK });
-                    sandbox.set_cell(x, y + 1, cell);
-                }
-                else if (sandbox.is_empty(x + dir, y + 1))
-                {
-                    sandbox.set_cell(x, y, { CellType::Empty, BLANK });
-                    sandbox.set_cell(x + dir, y + 1, cell);
-                }
-            }
-        });
+        //         if (sandbox.is_empty(x, y + 1))
+        //         {
+        //             sandbox.set_cell(x, y, { CellType::Empty, BLANK });
+        //             sandbox.set_cell(x, y + 1, cell);
+        //         }
+        //         else if (sandbox.is_empty(x + dir, y + 1))
+        //         {
+        //             sandbox.set_cell(x, y, { CellType::Empty, BLANK });
+        //             sandbox.set_cell(x + dir, y + 1, cell);
+        //         }
+        //     }
+        // });
+        sandbox.update<Worker>();
 
         BeginDrawing();
         ClearBackground(BLANK);
