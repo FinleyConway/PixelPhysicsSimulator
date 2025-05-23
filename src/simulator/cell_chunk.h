@@ -5,11 +5,11 @@
 
 #include "raylib.h"
 
-#include "point.h"
-#include "int_rect.h"
-#include "cell.h"
+#include "simulator/context.h"
+#include "simulator/cell.h"
+#include "utils/int_rect.h"
+#include "utils/point.h"
 
-template<int TWidth, int THeight, int TCellSize>
 class CellChunk
 {
 public:
@@ -33,6 +33,7 @@ public:
     bool should_remove() const;
 
 private:
+    int get_index(Point position) const;
     void set_next_rect(int index);
     void generate_bounds();
     void reset_rect(IntRect& rect);
@@ -47,8 +48,6 @@ private:
     IntRect m_dirty_rect;
 
     std::vector<std::pair<int, Cell>> m_changes; // look into a static_vector?
-    std::array<Cell, TWidth * THeight> m_grid;
+    std::array<Cell, Context::width * Context::height> m_grid;
     RenderTexture2D m_render_texture;
 };
-
-#include "cell_chunk.inl"

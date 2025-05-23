@@ -1,14 +1,28 @@
-#include "cell_chunk.h"
 #include "raylib.h"
 
-#include "cell_chunk_manager.h"
-#include "instrumentor.h"
+
+#include "simulator/chunk_manager.h"
+#include "utils/instrumentor.h"
+#include "chunk_worker.h"
+
+Rectangle handle_camera_view(const Camera2D& camera)
+{
+    Vector2 topLeft = GetScreenToWorld2D({ 0, 0 }, camera);
+    Vector2 bottomRight = GetScreenToWorld2D({ (float)GetScreenWidth(), (float)GetScreenHeight() }, camera);
+
+    return {
+        topLeft.x,
+        topLeft.y,
+        bottomRight.x - topLeft.x,
+        bottomRight.y - topLeft.y,
+    };
+}
 
 void raylib()
 {
     InitWindow(1280, 720, "Pixel Physics");
 
-    CellChunkManager sandbox;
+    ChunkManager sandbox;
     Vector2 movement = { 0, 0 };
     Camera2D camera = { 0 };
     camera.target = { 0, 0 };
@@ -41,40 +55,23 @@ void raylib()
             {
                 for (int x = -brush_radius; x <= brush_radius; ++x)
                 {
-                    sandbox.set_cell(gx + x, gy + y, { type, color });
+                    sandbox.set_cell({ gx + x, gy + y }, { type, color });
                 }
             }
         }
 
         camera.target = movement;
 
-        sandbox.update([&](const Cell& cell, int x, int y)
-        {
-            if (cell.type == CellType::Sand)
-            {
-                int dir = rand() % 2 ? -1 : 1;
-
-                if (sandbox.is_empty(x, y + 1))
-                {
-                    sandbox.set_cell(x, y, { CellType::Empty, BLANK });
-                    sandbox.set_cell(x, y + 1, cell);
-                }
-                else if (sandbox.is_empty(x + dir, y + 1))
-                {
-                    sandbox.set_cell(x, y, { CellType::Empty, BLANK });
-                    sandbox.set_cell(x + dir, y + 1, cell);
-                }
-            }
-        });
+        sandbox.update<ChunkWorker>();
 
         BeginDrawing();
         ClearBackground(BLANK);
 
-        sandbox.pre_draw(camera);
+        sandbox.pre_draw(handle_camera_view(camera));
 
         // within camera draw
         BeginMode2D(camera);
-        sandbox.draw(camera, true);
+        sandbox.draw(handle_camera_view(camera), true);
         EndMode2D();
 
         // global draw
@@ -91,9 +88,9 @@ void raylib()
 
 int main()
 {
-    //PROFILE_BEGIN_SESSION("Pixel", "result", 2048);
+    PROFILE_BEGIN_SESSION("Pixel", "result.json", 2048);
 
     raylib();
 
-    //PROFILE_END_SESSION();
+    PROFILE_END_SESSION();
 }
