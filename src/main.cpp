@@ -1,14 +1,13 @@
-#include "cell_chunk.h"
 #include "raylib.h"
 
-#include "cell_chunk_manager.h"
+#include "chunk_manager.h"
 #include "instrumentor.h"
 
 void raylib()
 {
     InitWindow(1280, 720, "Pixel Physics");
 
-    CellChunkManager sandbox;
+    ChunkManager sandbox;
     Vector2 movement = { 0, 0 };
     Camera2D camera = { 0 };
     camera.target = { 0, 0 };
@@ -91,9 +90,9 @@ void raylib()
 
 int main()
 {
-    //PROFILE_BEGIN_SESSION("Pixel", "result", 2048);
+    PROFILE_BEGIN_SESSION("Pixel", "result.json", 2048);
 
     raylib();
 
-    //PROFILE_END_SESSION();
+    PROFILE_END_SESSION();
 }

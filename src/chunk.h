@@ -8,6 +8,7 @@
 #include "instrumentor.h"
 #include "point.h"
 #include "int_rect.h"
+#include "chunk_context.h"
 
 enum class CellType
 {
@@ -22,20 +23,19 @@ struct Cell
     Color colour = BLANK;
 };
 
-template<int TWidth, int THeight, int TCellSize>
-class CellChunk
+class Chunk
 {
 public:
-    CellChunk(Point position) : m_position(position)
+    Chunk(Point position) : m_position(position)
     {
-        m_render_texture = LoadRenderTexture(TWidth * TCellSize, THeight * TCellSize);
-        m_changes.reserve(TWidth * THeight);
+        m_render_texture = LoadRenderTexture(c_width * c_cell_size, c_height * c_cell_size);
+        m_changes.reserve(c_width * c_height);
 
         reset_rect(m_final_rect);
         reset_rect(m_intermediate_rect);
     }
 
-    ~CellChunk()
+    ~Chunk()
     {
         UnloadRenderTexture(m_render_texture);
     }
@@ -47,12 +47,12 @@ public:
 
     const Cell& get_cell(Point position) const
     {
-        return m_grid[position.x + position.y * TWidth];
+        return m_grid[get_index(position)];
     }
 
     void set_cell(Point position, const Cell& cell)
     {
-        int index = position.x + position.y * TWidth;
+        int index = get_index(position);
 
         m_changes.emplace_back(index, cell);
         m_drawn = false;
@@ -62,12 +62,12 @@ public:
 
     void wake_up(Point position)
     {
-        set_next_rect(position.x + position.y * TWidth);
+        set_next_rect(get_index(position));
     }
 
     bool is_empty(Point position) const
     {
-        return m_grid[position.x + position.y * TWidth].type == CellType::Empty;
+        return m_grid[get_index(position)].type == CellType::Empty;
     }
 
     const IntRect& get_current_rect() const
@@ -126,7 +126,7 @@ public:
                 
                 if (current_cell.type != CellType::Empty)
                 {
-                    DrawRectangle(x * TCellSize, y * TCellSize, TCellSize, TCellSize, current_cell.colour);
+                    DrawRectangle(x * c_cell_size, y * c_cell_size, c_cell_size, c_cell_size, current_cell.colour);
                 }
             }
         }
@@ -157,19 +157,19 @@ public:
 
         if (debug)
         {
-            DrawRectangleLines(m_position.x, m_position.y, TWidth * TCellSize, THeight * TCellSize, GREEN);
+            DrawRectangleLines(m_position.x, m_position.y, c_width * c_cell_size, c_height * c_cell_size, GREEN);
             DrawRectangleLines(
-                m_position.x + m_dirty_rect.min_x * TCellSize,
-                m_position.y + m_dirty_rect.min_y * TCellSize,
-                (m_dirty_rect.max_x - m_dirty_rect.min_x + 1) * TCellSize,
-                (m_dirty_rect.max_y - m_dirty_rect.min_y + 1) * TCellSize,
+                m_position.x + m_dirty_rect.min_x * c_cell_size,
+                m_position.y + m_dirty_rect.min_y * c_cell_size,
+                (m_dirty_rect.max_x - m_dirty_rect.min_x + 1) * c_cell_size,
+                (m_dirty_rect.max_y - m_dirty_rect.min_y + 1) * c_cell_size,
                     (m_dirty_rect.min_x > m_dirty_rect.max_x || m_dirty_rect.min_y > m_dirty_rect.max_y) ? BLUE : RED
             );
             DrawRectangleLines(
-                m_position.x + m_final_rect.min_x * TCellSize,
-                m_position.y + m_final_rect.min_y * TCellSize,
-                (m_final_rect.max_x - m_final_rect.min_x + 1) * TCellSize,
-                (m_final_rect.max_y - m_final_rect.min_y + 1) * TCellSize,
+                m_position.x + m_final_rect.min_x * c_cell_size,
+                m_position.y + m_final_rect.min_y * c_cell_size,
+                (m_final_rect.max_x - m_final_rect.min_x + 1) * c_cell_size,
+                (m_final_rect.max_y - m_final_rect.min_y + 1) * c_cell_size,
                 WHITE
             );
             DrawText(TextFormat("%d", m_filled_cells), m_position.x, m_position.y, 20, YELLOW);
@@ -182,15 +182,20 @@ public:
     }
 
 private:
+    int get_index(Point position) const
+    {
+        return position.x + position.y * c_width;
+    }
+
     void set_next_rect(int index)
     {
-        int x = index % TWidth;
-        int y = index / TWidth;
+        int x = index % c_width;
+        int y = index / c_width;
 
         int min_x = std::max(x - 2, 0);
         int min_y = std::max(y - 2, 0);
-        int max_x = std::min(x + 2, TWidth - 1);
-        int max_y = std::min(y + 2, THeight - 1);
+        int max_x = std::min(x + 2, c_width - 1);
+        int max_y = std::min(y + 2, c_height - 1);
 
         m_intermediate_rect.min_x = std::min(m_intermediate_rect.min_x, min_x);
         m_intermediate_rect.min_y = std::min(m_intermediate_rect.min_y, min_y);
@@ -202,9 +207,9 @@ private:
     {
         reset_rect(m_final_rect);
 
-        for (int y = 0; y < THeight; y++)
+        for (int x = 0; x < c_width; x++)
         {
-            for (int x = 0; x < TWidth; x++)
+            for (int y = 0; y < c_height; y++)
             {
                 if (get_cell({ x, y }).type != CellType::Empty)
                 {
@@ -219,8 +224,8 @@ private:
 
     void reset_rect(IntRect& rect)
     {
-        rect.min_x = TWidth;
-        rect.min_y = THeight;
+        rect.min_x = c_width;
+        rect.min_y = c_height;
         rect.max_x = -1;
         rect.max_y = -1;
     }
@@ -228,13 +233,17 @@ private:
 private:
     Point m_position;
     int m_filled_cells = 0;
-
     bool m_drawn = false;
-    IntRect m_final_rect;
 
+    static constexpr int c_width = ChunkContext::width;
+    static constexpr int c_height = ChunkContext::height;
+    static constexpr int c_cell_size = ChunkContext::cell_size;
+
+    IntRect m_final_rect;
     IntRect m_intermediate_rect;
     IntRect m_dirty_rect;
+
     std::vector<std::pair<int, Cell>> m_changes;
-    std::array<Cell, TWidth * THeight> m_grid;
+    std::array<Cell, c_width * c_height> m_grid;
     RenderTexture2D m_render_texture;
 };

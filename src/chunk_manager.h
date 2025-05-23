@@ -7,21 +7,13 @@
 #include "instrumentor.h"
 #include "point.h"
 #include "raylib.h"
+#include "chunk.h"
+#include "chunk_context.h"
 
-#include "cell_chunk.h"
-
-#define TWidth 64
-#define THeight 64
-#define TCellSize 4
-
-//template<int TWidth, int THeight, int TCellSize>
-class CellChunkManager
+class ChunkManager
 {
-private:
-    using Chunk = CellChunk<TWidth, THeight, TCellSize>;
-
 public:
-    ~CellChunkManager()
+    ~ChunkManager()
     {
         for (auto* chunk : m_chunks)
         {
@@ -46,9 +38,9 @@ public:
         Point notify;
 
         if (local_pos.x == 0)           notify.x = -1;
-        if (local_pos.x == TWidth - 1)  notify.x = +1;
+        if (local_pos.x == c_width - 1)  notify.x = +1;
         if (local_pos.y == 0)           notify.y = -1;
-        if (local_pos.y == THeight - 1) notify.y = +1;
+        if (local_pos.y == c_height - 1) notify.y = +1;
 
         if (notify.x != 0)                  wake_up_chunk(x + notify.x, y);
         if (notify.y != 0)                  wake_up_chunk(x, y + notify.y);
@@ -116,7 +108,7 @@ public:
         for (auto* chunk : m_chunks)
         {
             const Point position = chunk->get_position();
-            const Point size = { TWidth * TCellSize, THeight * TCellSize };
+            const Point size = { c_width * c_cell_size, c_height * c_cell_size };
             const Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
 
             if (CheckCollisionRecs(view, chunkRect))
@@ -135,7 +127,7 @@ public:
         for (auto* chunk : m_chunks)
         {
             const Point position = chunk->get_position();
-            const Point size = { TWidth * TCellSize, THeight * TCellSize };
+            const Point size = { c_width * c_cell_size, c_height * c_cell_size };
             const Rectangle chunkRect = { (float)position.x, (float)position.y, (float)size.x, (float)size.y };
 
             if (CheckCollisionRecs(view, chunkRect))
@@ -149,32 +141,32 @@ public:
     Point pos_to_grid(float x, float y) const
     {
         return { 
-            static_cast<int>(std::floor(x / TCellSize)), 
-            static_cast<int>(std::floor(y / TCellSize)) 
+            static_cast<int>(std::floor(x / c_cell_size)), 
+            static_cast<int>(std::floor(y / c_cell_size)) 
         };
     }    
 
     Point grid_to_chunk(int x, int y) const
     {
         return { 
-            x >= 0 ? x / TWidth : (x - TWidth + 1) / TWidth,
-            y >= 0 ? y / THeight : (y - THeight + 1) / THeight,
+            x >= 0 ? x / c_width : (x - c_width + 1) / c_width,
+            y >= 0 ? y / c_height : (y - c_height + 1) / c_height,
         };
     }
 
     Point grid_to_chunk_local(int x, int y) const
     {
         return {
-            ((x % TWidth + TWidth) % TWidth),
-            ((y % THeight + THeight) % THeight)
+            ((x % c_width + c_width) % c_width),
+            ((y % c_height + c_height) % c_height)
         };
     }
 
     Point world_to_chunk(float x, float y) const
     {
         return {
-            static_cast<int>(std::floor(x / (TWidth * TCellSize))),
-            static_cast<int>(std::floor(y / (THeight * TCellSize)))
+            static_cast<int>(std::floor(x / (c_width * c_cell_size))),
+            static_cast<int>(std::floor(y / (c_height * c_cell_size)))
         };
     }
 
@@ -183,8 +175,8 @@ private:
     {
         PROFILE_FUNCTION();
 
-        int position_x = chunk_x * TWidth * TCellSize;
-        int position_y = chunk_y * THeight * TCellSize;
+        int position_x = chunk_x * c_width * c_cell_size;
+        int position_y = chunk_y * c_height * c_cell_size;
 
         auto* chunk = new Chunk({ position_x, position_y });
 
@@ -242,8 +234,8 @@ private:
             {
                 const Cell& cell = chunk->get_cell({ x, y });
 
-                int world_x = x + (position_x / TCellSize);
-                int world_y = y + (position_y / TCellSize);
+                int world_x = x + (position_x / c_cell_size);
+                int world_y = y + (position_y / c_cell_size);
 
                 update(cell, world_x, world_y);
             }
@@ -266,4 +258,8 @@ private:
 private:
     std::unordered_map<Point, Chunk*> m_chunk_lookup;
     std::vector<Chunk*> m_chunks;
+
+    static constexpr int c_width = ChunkContext::width;
+    static constexpr int c_height = ChunkContext::height;
+    static constexpr int c_cell_size = ChunkContext::cell_size;
 };
