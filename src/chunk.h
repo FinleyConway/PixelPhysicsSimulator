@@ -67,7 +67,7 @@ public:
 
     bool in_bounds(Point position) const
     {
-        return position.x < c_width && position.y < c_height;
+        return position.x >= 0 && position.y >= 0 && position.x < c_width && position.y < c_height;
     }
 
     void wake_up(Point position)
@@ -215,11 +215,6 @@ private:
         m_intermediate_rect.min_y = std::min(m_intermediate_rect.min_y, min_y);
         m_intermediate_rect.max_x = std::max(m_intermediate_rect.max_x, max_x);
         m_intermediate_rect.max_y = std::max(m_intermediate_rect.max_y, max_y);
-
-        assert(m_intermediate_rect.min_x >= 0 && m_intermediate_rect.min_x < c_width);
-        assert(m_intermediate_rect.max_x >= 0 && m_intermediate_rect.max_x < c_width);
-        assert(m_intermediate_rect.min_y >= 0 && m_intermediate_rect.min_y < c_height);
-        assert(m_intermediate_rect.max_y >= 0 && m_intermediate_rect.max_y < c_height);
     }
 
     void generate_bounds() 

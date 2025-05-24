@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <memory>
 #include <vector>
 #include <unordered_map>
 
@@ -13,12 +14,11 @@
 class ChunkManager
 {
 public:
-    ~ChunkManager()
+    ChunkManager()
     {
-        for (auto* chunk : m_chunks)
-        {
-            delete chunk;
-        }
+        // found feckin bug maybe???? m_chunks resizes while iteration due to get_chunk creating a new chunk resizes the vector!!!!!
+        // which causes all the chunks in the vector to go null
+        m_chunks.reserve(512); // need to defer new chunks
     }
 
     const Cell& get_cell(int x, int y)
@@ -54,7 +54,10 @@ public:
         const Point chunk_position = grid_to_chunk(x, y);
         const Point local_position = grid_to_chunk_local(x, y);
 
-        get_chunk(chunk_position)->wake_up(local_position);
+        if (m_chunk_lookup.contains(chunk_position))
+        {
+            m_chunk_lookup.at(chunk_position)->wake_up(local_position);
+        }
     }
 
     bool is_empty(int x, int y) const
@@ -81,18 +84,20 @@ public:
     {
         PROFILE_FUNCTION();
 
-        for (auto* chunk : m_chunks)
+        for (auto& chunk : m_chunks)
         {
-            auto tmp = Func(*this, chunk);
+            assert(chunk != nullptr);
+
+            auto tmp = Func(*this, chunk.get());
             tmp.update_chunk();
         }
 
-        for (auto* chunk : m_chunks)
+        for (auto& chunk : m_chunks)
         {
             chunk->apply_cells();
         }
 
-        for (auto* chunk : m_chunks)
+        for (auto& chunk : m_chunks)
         {
             chunk->update_rect();
         }
@@ -106,9 +111,9 @@ public:
 
         const Rectangle view = handle_camera_view(camera);
 
-        for (auto* chunk : m_chunks)
+        for (auto& chunk : m_chunks)
         {
-            if (is_chunk_in_view(chunk, view))
+            if (is_chunk_in_view(chunk.get(), view))
             {
                 chunk->pre_draw();
             }
@@ -121,9 +126,9 @@ public:
 
         const Rectangle view = handle_camera_view(camera);
 
-        for (const auto* chunk : m_chunks)
+        for (const auto& chunk : m_chunks)
         {
-            if (is_chunk_in_view(chunk, view))
+            if (is_chunk_in_view(chunk.get(), view))
             {
                 chunk->draw(debug);
             }
@@ -173,14 +178,13 @@ private:
             chunk_position.y * c_height * c_cell_size,
         };
           
-        TraceLog(LOG_INFO, "Chunk new position: %s", position.to_str().c_str());
+        auto chunk = std::make_unique<Chunk>(position);
+        Chunk* chunk_ptr = chunk.get();
 
-        auto* chunk = new Chunk(position);
+        m_chunk_lookup.try_emplace(chunk_position, chunk_ptr);
+        m_chunks.emplace_back(std::move(chunk));
 
-        m_chunk_lookup.try_emplace(chunk_position, chunk);
-        m_chunks.emplace_back(chunk);
-
-        return chunk;
+        return chunk_ptr;
     }
 
     Chunk* get_chunk(Point chunk_position)
@@ -197,7 +201,7 @@ private:
     {
         for (auto it = m_chunks.begin(); it != m_chunks.end();)
         {
-            Chunk* chunk = *it;
+            std::unique_ptr<Chunk>& chunk = *it;
 
             if (chunk->should_remove())
             {
@@ -206,9 +210,6 @@ private:
 
                 m_chunk_lookup.erase(chunk_position);
                 it = m_chunks.erase(it);
-
-                delete chunk;
-                chunk = nullptr;
             }
             else 
             {
@@ -246,7 +247,7 @@ private:
 
 private:
     std::unordered_map<Point, Chunk*> m_chunk_lookup;
-    std::vector<Chunk*> m_chunks;
+    std::vector<std::unique_ptr<Chunk>> m_chunks;
 
     static constexpr int c_width = ChunkContext::width;
     static constexpr int c_height = ChunkContext::height;
