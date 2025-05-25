@@ -1,9 +1,8 @@
 #pragma once
 
 #include <cmath>
-#include <memory>
-#include <vector>
 #include <unordered_map>
+#include <boost/container/static_vector.hpp>
 
 #include "instrumentor.h"
 #include "point.h"
@@ -16,17 +15,28 @@ class ChunkManager
 public:
     ChunkManager()
     {
-        // found feckin bug maybe???? m_chunks resizes while iteration due to get_chunk creating a new chunk resizes the vector!!!!!
-        // which causes all the chunks in the vector to go null
-        m_chunks.reserve(512); // need to defer new chunks
+        m_chunk_lookup.reserve(c_max_chunks);
     }
 
-    const Cell& get_cell(int x, int y)
+    ~ChunkManager()
+    {
+        for (auto* chunk : m_chunks)
+        {
+            delete chunk;
+        }
+    }
+
+    const Cell* get_cell(int x, int y)
     {
         const Point chunk_position = grid_to_chunk(x, y);
         const Point local_position = grid_to_chunk_local(x, y);
 
-        return get_chunk(chunk_position)->get_cell(local_position);
+        if (Chunk* chunk = get_chunk_or_create(chunk_position))
+        {
+            return &chunk->get_cell(local_position);
+        } 
+
+        return nullptr;
     }    
 
     void set_cell(int x, int y, const Cell& cell)
@@ -34,19 +44,21 @@ public:
         const Point chunk_position = grid_to_chunk(x, y);
         const Point local_position = grid_to_chunk_local(x, y);
 
-        auto* chunk = get_chunk(chunk_position);
-        Point notify;
+        if (Chunk* chunk = get_chunk_or_create(chunk_position))
+        {  
+            Point notify;
 
-        if (local_position.x == 0)            notify.x = -1;
-        if (local_position.x == c_width - 1)  notify.x = +1;
-        if (local_position.y == 0)            notify.y = -1;
-        if (local_position.y == c_height - 1) notify.y = +1;
+            if (local_position.x == 0)            notify.x = -1;
+            if (local_position.x == c_width - 1)  notify.x = +1;
+            if (local_position.y == 0)            notify.y = -1;
+            if (local_position.y == c_height - 1) notify.y = +1;
 
-        if (notify.x != 0)                  wake_up_chunk(x + notify.x, y);
-        if (notify.y != 0)                  wake_up_chunk(x, y + notify.y);
-        if (notify.x != 0 && notify.y != 0) wake_up_chunk(x + notify.x, y + notify.y);
+            if (notify.x != 0)                  wake_up_chunk(x + notify.x, y);
+            if (notify.y != 0)                  wake_up_chunk(x, y + notify.y);
+            if (notify.x != 0 && notify.y != 0) wake_up_chunk(x + notify.x, y + notify.y);
 
-        chunk->set_cell(local_position, cell);
+            chunk->set_cell(local_position, cell);
+        }
     }
 
     void wake_up_chunk(int x, int y)
@@ -79,25 +91,25 @@ public:
     }
 
 public:
-    template<typename Func>
+    template<typename ChunkWorker>
     void update()
     {
         PROFILE_FUNCTION();
 
-        for (auto& chunk : m_chunks)
+        for (auto* chunk : m_chunks)
         {
             assert(chunk != nullptr);
 
-            auto tmp = Func(*this, chunk.get());
+            auto tmp = ChunkWorker(*this, chunk);
             tmp.update_chunk();
         }
 
-        for (auto& chunk : m_chunks)
+        for (auto* chunk : m_chunks)
         {
             chunk->apply_cells();
         }
 
-        for (auto& chunk : m_chunks)
+        for (auto* chunk : m_chunks)
         {
             chunk->update_rect();
         }
@@ -111,9 +123,11 @@ public:
 
         const Rectangle view = handle_camera_view(camera);
 
-        for (auto& chunk : m_chunks)
+        for (auto* chunk : m_chunks)
         {
-            if (is_chunk_in_view(chunk.get(), view))
+            assert(chunk != nullptr);
+
+            if (is_chunk_in_view(chunk, view))
             {
                 chunk->pre_draw();
             }
@@ -126,9 +140,11 @@ public:
 
         const Rectangle view = handle_camera_view(camera);
 
-        for (const auto& chunk : m_chunks)
+        for (const auto* chunk : m_chunks)
         {
-            if (is_chunk_in_view(chunk.get(), view))
+            assert(chunk != nullptr);
+
+            if (is_chunk_in_view(chunk, view))
             {
                 chunk->draw(debug);
             }
@@ -169,25 +185,43 @@ public:
     }
 
 private:
+    bool in_world_bounds(const Point& chunk_position)
+    {
+        return (
+            chunk_position.x >= c_min_chunk_pos.x && 
+            chunk_position.x <= c_max_chunk_pos.x &&
+            chunk_position.y >= c_min_chunk_pos.y && 
+            chunk_position.y <= c_max_chunk_pos.y
+        );
+    }
+
     Chunk* create_chunk(Point chunk_position)
     {
         PROFILE_FUNCTION();
 
-        const Point position = {
-            chunk_position.x * c_width * c_cell_size,
-            chunk_position.y * c_height * c_cell_size,
-        };
-          
-        auto chunk = std::make_unique<Chunk>(position);
-        Chunk* chunk_ptr = chunk.get();
+        if (in_world_bounds(chunk_position))
+        {
+            const Point position = {
+                chunk_position.x * c_width * c_cell_size,
+                chunk_position.y * c_height * c_cell_size,
+            };
 
-        m_chunk_lookup.try_emplace(chunk_position, chunk_ptr);
-        m_chunks.emplace_back(std::move(chunk));
+            auto* chunk = new Chunk(position);
 
-        return chunk_ptr;
+            auto [it, inserted] = m_chunk_lookup.try_emplace(chunk_position, chunk);
+
+            if (inserted)
+            {
+                return m_chunks.emplace_back(chunk);
+            }
+
+            delete chunk; // i cant imagine we'll get here but who knows
+        }
+
+        return nullptr;
     }
 
-    Chunk* get_chunk(Point chunk_position)
+    Chunk* get_chunk_or_create(Point chunk_position)
     {
         if (m_chunk_lookup.contains(chunk_position))
         {
@@ -201,7 +235,7 @@ private:
     {
         for (auto it = m_chunks.begin(); it != m_chunks.end();)
         {
-            std::unique_ptr<Chunk>& chunk = *it;
+            Chunk* chunk = *it;
 
             if (chunk->should_remove())
             {
@@ -210,6 +244,8 @@ private:
 
                 m_chunk_lookup.erase(chunk_position);
                 it = m_chunks.erase(it);
+
+                delete chunk;
             }
             else 
             {
@@ -246,10 +282,15 @@ private:
     }
 
 private:
-    std::unordered_map<Point, Chunk*> m_chunk_lookup;
-    std::vector<std::unique_ptr<Chunk>> m_chunks;
-
     static constexpr int c_width = ChunkContext::width;
     static constexpr int c_height = ChunkContext::height;
     static constexpr int c_cell_size = ChunkContext::cell_size;
+
+    static constexpr Point c_min_chunk_pos = ChunkContext::min_chunk_pos;
+    static constexpr Point c_max_chunk_pos = ChunkContext::max_chunk_pos;
+    static constexpr int c_max_chunks = ChunkContext::max_chunks;
+
+private:
+    std::unordered_map<Point, Chunk*> m_chunk_lookup;
+    boost::container::static_vector<Chunk*, c_max_chunks> m_chunks;
 };

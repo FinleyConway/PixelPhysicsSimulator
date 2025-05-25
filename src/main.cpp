@@ -43,9 +43,13 @@ void raylib()
     camera.rotation = 0.0f;
     camera.zoom = 1.0f; 
 
+    float time_step = 1.0f / 60.0f;
+    float accumulator = 0;
+
     while (!WindowShouldClose())
     {
         float frame_time = GetFrameTime();
+        accumulator += frame_time;
 
         if (IsKeyDown(KEY_D)) movement.x += 512.0f * frame_time;
         if (IsKeyDown(KEY_A)) movement.x -= 512.0f * frame_time;
@@ -85,7 +89,12 @@ void raylib()
 
         camera.target = movement;
 
-        sandbox.update<Worker>();
+        // update every 1/60th
+        while (accumulator > time_step)
+        {
+            sandbox.update<Worker>();
+            accumulator -= time_step;
+        }
 
         BeginDrawing();
         ClearBackground(BLANK);

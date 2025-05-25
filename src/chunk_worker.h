@@ -62,5 +62,5 @@ protected:
 
 private:
     ChunkManager& m_manager;
-    Chunk* m_chunk;
+    Chunk* m_chunk = nullptr;
 };
