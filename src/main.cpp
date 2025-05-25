@@ -12,19 +12,41 @@ public:
 protected:
     void update_cell(const Cell& cell, int x, int y)
     {
+        int dir = rand() % 2 ? -1 : 1;
+
         if (cell.type == CellType::Sand)
         {
-            int dir = rand() % 2 ? -1 : 1;
-
             if (is_empty(x, y + 1))
             {
-                set_cell(x, y, { CellType::Empty, BLANK });
-                set_cell(x, y + 1, cell);
+                move_cell(x, y, x, y + 1, cell);
             }
             else if (is_empty(x + dir, y + 1))
             {
-                set_cell(x, y, { CellType::Empty, BLANK });
-                set_cell(x + dir, y + 1, cell);
+                move_cell(x, y, x + dir, y + 1, cell);
+            }
+        }
+
+        if (cell.type == CellType::Water)
+        {
+            if (is_empty(x, y + 1))
+            {
+                move_cell(x, y, x, y + 1, cell);
+            }
+            else if (is_empty(x + 1, y + 1))
+            {
+                move_cell(x, y, x + 1, y + 1, cell);
+            }
+            else if (is_empty(x - 1, y + 1))
+            {
+                move_cell(x, y, x - 1, y + 1, cell);
+            }
+            else if (is_empty(x + 1, y))
+            {
+                move_cell(x, y, x + 1, y, cell);
+            }
+            else if (is_empty(x - 1, y))
+            {
+                move_cell(x, y, x - 1, y, cell);
             }
         }
     }
@@ -45,6 +67,8 @@ void raylib()
     float time_step = 1.0f / 60.0f;
     float accumulator = 0;
 
+    Cell current_cell = Cell();
+
     while (!WindowShouldClose())
     {
         float frame_time = GetFrameTime();
@@ -57,33 +81,39 @@ void raylib()
         
         const int brush_radius = 2;
 
-        if (IsKeyDown(KEY_SPACE) || IsKeyDown(KEY_C))
+        if (IsKeyPressed(KEY_ONE))   current_cell = { CellType::Sand, YELLOW };
+        if (IsKeyPressed(KEY_TWO))   current_cell = { CellType::Water, BLUE };
+        if (IsKeyPressed(KEY_THREE)) current_cell = { CellType::Stone, GRAY };
+
+        if (IsMouseButtonDown(0))
         {
             Vector2 pos = GetMousePosition();
             pos = GetScreenToWorld2D(pos, camera);
 
             auto [gx, gy] = sandbox.pos_to_grid(pos.x, pos.y);
-
-            CellType type = IsKeyDown(KEY_SPACE) ? CellType::Stone : CellType::Sand;
-            Color color = IsKeyDown(KEY_SPACE) ? GRAY : YELLOW;
 
             for (int y = -brush_radius; y <= brush_radius; ++y)
             {
                 for (int x = -brush_radius; x <= brush_radius; ++x)
                 {
-                    sandbox.set_cell(gx + x, gy + y, { type, color });
+                    sandbox.set_cell(gx + x, gy + y, current_cell);
                 }
             }
         }
-
-        if (IsKeyDown(KEY_V))
+        else if (IsMouseButtonDown(1))
         {
             Vector2 pos = GetMousePosition();
             pos = GetScreenToWorld2D(pos, camera);
 
             auto [gx, gy] = sandbox.pos_to_grid(pos.x, pos.y);
 
-            sandbox.set_cell(gx, gy, { CellType::Empty, BLANK });
+            for (int y = -brush_radius; y <= brush_radius; ++y)
+            {
+                for (int x = -brush_radius; x <= brush_radius; ++x)
+                {
+                    sandbox.set_cell(gx + x, gy + y, Cell());
+                }
+            }
         }
 
         camera.target = movement;

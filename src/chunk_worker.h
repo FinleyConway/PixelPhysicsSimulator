@@ -20,7 +20,7 @@ public:
 
         for (int x = rect.min_x; x <= rect.max_x; x++)
         {
-            for (int y = rect.min_y; y <= rect.max_y; y++)
+            for (int y = rect.max_y; y >= rect.min_y; y--)
             {
                 const Cell& cell = m_chunk->get_cell({ x, y });
                 const Point world_position = {
@@ -35,6 +35,16 @@ public:
 
 protected:
     virtual void update_cell(const Cell& cell, int x, int y) = 0;
+
+    const Cell* get_cell(int x, int y)
+    {
+        return m_manager.get_cell(x, y);
+    }
+
+    void move_cell(int from_x, int from_y, int to_x, int to_y, const Cell& cell)
+    {
+        m_manager.move_cell(from_x, from_y, to_x, to_y);
+    }
 
     void set_cell(int x, int y, const Cell& cell)
     {

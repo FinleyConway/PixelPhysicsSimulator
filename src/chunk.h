@@ -14,6 +14,14 @@
 
 class Chunk
 {
+private:
+    struct CellChange
+    {
+        int src_index = 0;
+        int dst_index = 0;
+        Chunk* chunk = nullptr;
+    };
+
 public:
     Chunk(Point position) : m_position(position)
     {
@@ -33,23 +41,60 @@ public:
         return m_position;
     }
 
+    const Cell& get_cell(int index) const
+    {
+        assert(in_bounds(index) && "Chunk::get_cell out of bounds!");
+
+        return m_grid[index];
+    }
+
     const Cell& get_cell(Point position) const
     {
         assert(in_bounds(position) && "Chunk::get_cell out of bounds!");
 
-        return m_grid[get_index(position)];
+        return get_cell(get_index(position));
     }
 
-    void set_cell(Point position, const Cell& cell)
+    void move_cell(Point from_position, Point to_position, Chunk* chunk)
     {
-        assert(in_bounds(position) && "Chunk::set_cell out of bounds!");
+        assert(chunk != nullptr && "Chunk::move_cell chunk is nullptr!");
 
-        int index = get_index(position);
+        // keep track of the changes
+        m_changes.emplace_back(
+            get_index(from_position),
+            get_index(to_position),
+            chunk
+        );
+    }
 
-        m_changes.emplace_back(index, cell);
+    void set_cell(int index, const Cell& cell) 
+    {
+        assert(in_bounds(index) && "Chunk::set_cell out of bounds!");
+
+        // allows to overwrite the grid
+        Cell& dest = m_grid[index];
+
+        // checks if im filling or removing a cell
+        if (dest.type == CellType::Empty && cell.type != CellType::Empty)
+        {
+            m_filled_cells++;
+        }
+        else if (dest.type != CellType::Empty && cell.type == CellType::Empty)
+        {
+            m_filled_cells--;
+        }
+
+        // set and flag grid
+        dest = cell;
         m_drawn = false;
-
+        
+        // wake up chunk to apply changes
         set_next_rect(index);
+    }
+
+    void set_cell(Point position, const Cell& cell) 
+    {
+        set_cell(get_index(position), cell);
     }
 
     bool in_bounds(Point position) const
@@ -57,10 +102,16 @@ public:
         return position.x >= 0 && position.y >= 0 && position.x < c_width && position.y < c_height;
     }
 
+    bool in_bounds(int index) const
+    {
+        return index >= 0 && index < m_grid.size();
+    }
+
     void wake_up(Point position)
     {
         assert(in_bounds(position) && "Chunk::wake_up out of bounds!");
 
+        // wake up change by modifying to iteration bounds
         set_next_rect(get_index(position));
     }
 
@@ -76,24 +127,33 @@ public:
         return m_dirty_rect;
     }
 
-    void apply_cells()
+    void apply_moved_cells()
     {
         if (m_changes.empty()) return;
-
-        for (const auto& [index, cell] : m_changes)
+        
+        // sort changes by destination
+        std::sort(m_changes.begin(), m_changes.end(), 
+            [](const auto& a, const auto& b) 
         {
-            const Cell& dest = m_grid[index];
+            return a.dst_index < b.dst_index;
+        });
 
-            if (dest.type == CellType::Empty && cell.type != CellType::Empty)
+        int prev_iter = 0;
+        m_changes.emplace_back(-1, -1, nullptr);
+        
+        for (int i = 0; i < m_changes.size() - 1; i++)
+        {
+            if (m_changes[i].dst_index != m_changes[i + 1].dst_index)
             {
-                m_filled_cells++;
-            }
-            else if (dest.type != CellType::Empty && cell.type == CellType::Empty)
-            {
-                m_filled_cells--;
-            }
+                int chosen = GetRandomValue(i, prev_iter);
+                auto& change = m_changes[chosen];
 
-            m_grid[index] = cell;
+                // swap cells from the source to destination
+                set_cell(change.dst_index, change.chunk->get_cell(change.src_index));
+                change.chunk->set_cell(change.src_index, Cell());
+
+                prev_iter = i + 1;
+            }
         }
 
         m_changes.clear();
@@ -239,7 +299,7 @@ private:
     IntRect m_intermediate_rect;
     IntRect m_dirty_rect;
 
-    boost::container::static_vector<std::pair<int, Cell>, c_width * c_height> m_changes;
+    boost::container::static_vector<CellChange, c_width * c_height> m_changes;
     std::array<Cell, c_width * c_height> m_grid;
     RenderTexture2D m_render_texture;
 };

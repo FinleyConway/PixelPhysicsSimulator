@@ -38,6 +38,36 @@ public:
         return nullptr;
     }    
 
+    void move_cell(int from_x, int from_y, int to_x, int to_y)
+    {
+        const Point from_chunk_pos = grid_to_chunk(from_x, from_y);
+        const Point to_chunk_pos = grid_to_chunk(to_x, to_y);
+
+        Chunk* from_chunk = get_chunk_or_create(from_chunk_pos);
+        Chunk* to_chunk = get_chunk_or_create(to_chunk_pos);
+
+        if (from_chunk != nullptr && to_chunk != nullptr)
+        {
+            const Point from_local = grid_to_chunk_local(from_x, from_y);
+            const Point to_local = grid_to_chunk_local(to_x, to_y);
+            Point notify;
+
+            // get chunk offset if local pos is at the edges
+            if (from_local.x == 0)            notify.x = -1;
+            if (from_local.x == c_width - 1)  notify.x = +1;
+            if (from_local.y == 0)            notify.y = -1;
+            if (from_local.y == c_height - 1) notify.y = +1;
+
+            // notify neighour chunks
+            if (notify.x != 0)                  wake_up_chunk(from_x + notify.x, from_y);
+            if (notify.y != 0)                  wake_up_chunk(from_x, from_y + notify.y);
+            if (notify.x != 0 && notify.y != 0) wake_up_chunk(from_x + notify.x, from_y + notify.y);
+
+            // move cell
+            to_chunk->move_cell(from_local, to_local, from_chunk);
+        }
+    }
+
     void set_cell(int x, int y, const Cell& cell)
     {
         const Point chunk_position = grid_to_chunk(x, y);
@@ -45,17 +75,6 @@ public:
 
         if (Chunk* chunk = get_chunk_or_create(chunk_position))
         {  
-            Point notify;
-
-            if (local_position.x == 0)            notify.x = -1;
-            if (local_position.x == c_width - 1)  notify.x = +1;
-            if (local_position.y == 0)            notify.y = -1;
-            if (local_position.y == c_height - 1) notify.y = +1;
-
-            if (notify.x != 0)                  wake_up_chunk(x + notify.x, y);
-            if (notify.y != 0)                  wake_up_chunk(x, y + notify.y);
-            if (notify.x != 0 && notify.y != 0) wake_up_chunk(x + notify.x, y + notify.y);
-
             chunk->set_cell(local_position, cell);
         }
     }
@@ -103,7 +122,7 @@ public:
 
         for (auto* chunk : m_chunks)
         {
-            chunk->apply_cells();
+            chunk->apply_moved_cells();
         }
 
         for (auto* chunk : m_chunks)
