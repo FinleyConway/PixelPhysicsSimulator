@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <boost/container/static_vector.hpp>
 
-#include "instrumentor.h"
 #include "point.h"
 #include "raylib.h"
 #include "chunk.h"
@@ -94,8 +93,6 @@ public:
     template<typename ChunkWorker>
     void update()
     {
-        PROFILE_FUNCTION();
-
         for (auto* chunk : m_chunks)
         {
             assert(chunk != nullptr);
@@ -119,8 +116,6 @@ public:
 
     void pre_draw(const Camera2D& camera)
     {
-        PROFILE_FUNCTION();
-
         const Rectangle view = handle_camera_view(camera);
 
         for (auto* chunk : m_chunks)
@@ -136,8 +131,6 @@ public:
 
     void draw(const Camera2D& camera, bool debug = false)
     {
-        PROFILE_FUNCTION();
-
         const Rectangle view = handle_camera_view(camera);
 
         for (const auto* chunk : m_chunks)
@@ -197,8 +190,6 @@ private:
 
     Chunk* create_chunk(Point chunk_position)
     {
-        PROFILE_FUNCTION();
-
         if (in_world_bounds(chunk_position))
         {
             const Point position = {

@@ -3,7 +3,6 @@
 #include "raylib.h"
 
 #include "chunk_manager.h"
-#include "instrumentor.h"
 
 class Worker : public ChunkWorker
 {
@@ -120,9 +119,5 @@ void raylib()
 
 int main()
 {
-    PROFILE_BEGIN_SESSION("Pixel", "result.json", 2048);
-
     raylib();
-
-    PROFILE_END_SESSION();
 }

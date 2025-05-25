@@ -7,7 +7,6 @@
 
     #include "raylib.h"
 
-    #include "instrumentor.h"
     #include "point.h"
     #include "int_rect.h"
     #include "chunk_context.h"
@@ -91,8 +90,6 @@
 
         void apply_cells()
         {
-            PROFILE_FUNCTION();
-
             if (m_changes.empty()) return;
 
             for (const auto& [index, cell] : m_changes)
@@ -123,8 +120,6 @@
 
         void pre_draw()
         {
-            PROFILE_FUNCTION();
-
             if (m_drawn) return;
 
             generate_bounds();
@@ -152,8 +147,6 @@
 
         void draw(bool debug) const
         {
-            PROFILE_FUNCTION();
-
             // draw the chunk texture
             Rectangle sourceRec = {
                 0.0f,                        
