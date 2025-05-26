@@ -1,13 +1,14 @@
 #include <catch2/catch_test_macros.hpp>
-#include "cell.h"
-#include "chunk_manager.h"
-#include "chunk_worker.h"
-#include "raylib.h"
+#include <raylib.h>
 
-class TestWorker : public ChunkWorker
+#include "simulation/chunk_manager.h"
+#include "simulation/chunk_worker.h"
+#include "cell.h"
+
+class ChunkUpdater : public ChunkWorker
 {
 public:
-    TestWorker(ChunkManager& manager, Chunk* chunk) : ChunkWorker(manager, chunk) { }
+    ChunkUpdater(ChunkManager& manager, Chunk* chunk) : ChunkWorker(manager, chunk) { }
 
 protected:
     void update_cell(const Cell& cell, int x, int y)
@@ -72,7 +73,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
         REQUIRE(b_to->type == CellType::Empty); // hasnt moved yet
         REQUIRE(manager.get_total_chunks() == 1);
 
-        manager.update<TestWorker>(); // moved
+        manager.update<ChunkUpdater>(0); // moved
 
         const Cell* from = manager.get_cell(0, 0);
         const Cell* to = manager.get_cell(20, 20);
@@ -90,7 +91,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
 
         manager.move_cell(2, 2, 3, 3); // within same chunk
 
-        manager.update<TestWorker>();
+        manager.update<ChunkUpdater>(0.0f);
 
         REQUIRE(manager.get_cell(2, 2)->type == CellType::Empty);
         REQUIRE(manager.get_cell(3, 3)->type == CellType::Sand);
@@ -102,7 +103,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
 
         manager.move_cell(10, 10, 12, 12);
 
-        manager.update<TestWorker>();
+        manager.update<ChunkUpdater>(0.0f);
 
         REQUIRE(manager.get_cell(10, 10)->type == CellType::Empty);
         REQUIRE(manager.get_cell(12, 12)->type == CellType::Empty);
@@ -114,7 +115,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
         manager.set_cell(6, 6, { CellType::Water, BLUE });
 
         manager.move_cell(5, 5, 6, 6);
-        manager.update<TestWorker>();
+        manager.update<ChunkUpdater>(0.0f);
 
         // Depending on logic:
         REQUIRE(manager.get_cell(5, 5)->type == CellType::Empty);

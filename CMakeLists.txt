@@ -30,11 +30,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(catch2)
 
 # Main Executable
-add_executable(SandSimulator)
+add_executable(SandSimulator src/main.cpp)
 add_subdirectory(src)
 
 target_include_directories(SandSimulator PRIVATE ${Boost_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(SandSimulator PRIVATE raylib)
+target_link_libraries(SandSimulator PRIVATE SandSimulatorLib)
 
 set_target_properties(SandSimulator PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}

@@ -1,12 +1,14 @@
 #include <catch2/catch_test_macros.hpp>
+#include <raylib.h>
+
+
 #include "cell.h"
-#include "int_rect.h"
-#include "raylib.h"
-#include "chunk.h"
+#include "utils/int_rect.h"
+#include "simulation/chunk.h"
 
 void CustomLog2(int msgType, const char *text, va_list args)
 { 
-  return;
+    return;
 }
 
 TEST_CASE("Chunk Class Test", "[Chunk]")
