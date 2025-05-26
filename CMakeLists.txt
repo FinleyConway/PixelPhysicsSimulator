@@ -1,38 +1,45 @@
 cmake_minimum_required(VERSION 3.24...3.30)
 project(SandSimulator)
 
-include(FetchContent)
-
-# Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Add Raylib
+include(FetchContent)
+include(CTest)
+
+# Boost
+find_package(Boost REQUIRED)
+
+# Raylib
 set(RAYLIB_VERSION 5.5)
 FetchContent_Declare(
     raylib
-    DOWNLOAD_EXTRACT_TIMESTAMP OFF
     URL https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz
-    FIND_PACKAGE_ARGS
 )
 set(GLFW_BUILD_WAYLAND ON)
 set(GLFW_BUILD_X11 OFF)
 FetchContent_MakeAvailable(raylib)
 
-# Add boost
-find_package(Boost REQUIRED)
+# Catch2
+set(CATCH2_VERSION v3.8.1)
+FetchContent_Declare(
+    catch2
+    URL https://github.com/catchorg/Catch2/archive/refs/tags/${CATCH2_VERSION}.zip
+)
+FetchContent_MakeAvailable(catch2)
 
-# Our Project
-add_executable(${PROJECT_NAME})
+# Main Executable
+add_executable(SandSimulator)
 add_subdirectory(src)
 
-target_include_directories(SandSimulator PRIVATE ${Boost_INCLUDE_DIRS})
+target_include_directories(SandSimulator PRIVATE ${Boost_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(SandSimulator PRIVATE raylib)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set_target_properties(SandSimulator PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}
+    VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:SandSimulator>
 )
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-
-target_link_libraries(${PROJECT_NAME} raylib)
+# Tests
+add_subdirectory(test)
