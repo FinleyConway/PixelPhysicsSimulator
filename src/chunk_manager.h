@@ -89,7 +89,7 @@ public:
             m_chunk_lookup.at(chunk_position)->wake_up(local_position);
         }
     }
-
+    
     bool is_empty(int x, int y) const
     {
         const Point chunk_position = grid_to_chunk(x, y);

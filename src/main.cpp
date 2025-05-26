@@ -4,10 +4,10 @@
 
 #include "chunk_manager.h"
 
-class Worker : public ChunkWorker
+class TestWorker : public ChunkWorker
 {
 public:
-    Worker(ChunkManager& manager, Chunk* chunk) : ChunkWorker(manager, chunk) { }
+    TestWorker(ChunkManager& manager, Chunk* chunk) : ChunkWorker(manager, chunk) { }
 
 protected:
     void update_cell(const Cell& cell, int x, int y)
@@ -121,7 +121,7 @@ void raylib()
         // update every 1/60th
         while (accumulator > time_step)
         {
-            sandbox.update<Worker>();
+            sandbox.update<TestWorker>();
             accumulator -= time_step;
         }
 
