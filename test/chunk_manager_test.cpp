@@ -4,6 +4,7 @@
 #include "simulation/chunk_manager.h"
 #include "simulation/chunk_worker.h"
 #include "core/cell.h"
+#include "utils/colour.h"
 
 class ChunkUpdater : public ChunkWorker
 {
@@ -114,8 +115,8 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
 
     SECTION("Move to occupied cell")
     {
-        manager.set_cell(5, 5, { CellType::Sand, YELLOW });
-        manager.set_cell(6, 6, { CellType::Water, BLUE });
+        manager.set_cell(5, 5, { CellType::Sand, 0 });
+        manager.set_cell(6, 6, { CellType::Water, 0 });
 
         manager.move_cell(5, 5, 6, 6);
         for (int i = 0; i < 10; i++)

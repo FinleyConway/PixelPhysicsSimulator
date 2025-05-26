@@ -1,4 +1,5 @@
 #include "simulation/chunk.h"
+#include "utils/colour.h"
 
 #include <cassert>
 #include <algorithm>
@@ -164,10 +165,13 @@ void Chunk::pre_draw()
         for (int y = m_final_rect.min_y; y <= m_final_rect.max_y; y++)
         {
             const Cell& current_cell = get_cell({ x, y });
+            const Colour cell_colour = current_cell.colour;
             
             if (current_cell.type != CellType::Empty)
             {
-                DrawRectangle(x * c_cell_size, y * c_cell_size, c_cell_size, c_cell_size, current_cell.colour);
+                DrawRectangle(x * c_cell_size, y * c_cell_size, c_cell_size, c_cell_size, { 
+                    cell_colour.r, cell_colour.g, cell_colour.b, cell_colour.a 
+                });
             }
         }
     }

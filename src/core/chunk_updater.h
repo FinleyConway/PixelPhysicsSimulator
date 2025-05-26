@@ -1,6 +1,7 @@
 #pragma once
 
-#include "cell.h"
+#include "core/cell.h"
+#include "raylib.h"
 #include "simulation/chunk.h"
 #include "simulation/chunk_worker.h"
 #include "simulation/chunk_manager.h"
@@ -18,11 +19,16 @@ protected:
 
         if (cell.type == CellType::Sand)
         {   
-            if (is_empty(x, y + 1) || has_type_at(x, y + 1, CellType::Water))
+            bool has_type_down = has_types_at<2>(x, y + 1, {
+                CellType::Water,
+                CellType::Smoke
+            });
+
+            if (is_empty(x, y + 1) || has_type_down)
             {
                 move_cell(x, y, x, y + 1);
             }
-            else if (try_random_ver(x, y, dest_x, dest_y)) 
+            else if (try_random_dver(x, y, dest_x, dest_y)) 
             {
                 move_cell(x, y, dest_x, dest_y);
             }
@@ -34,11 +40,27 @@ protected:
             {
                 move_cell(x, y, x, y + 1);
             }
-            else if (try_random_ver(x, y, dest_x, dest_y))
+            else if (try_random_dver(x, y, dest_x, dest_y))
             {
                 move_cell(x, y, dest_x, dest_y);
             }
-            else if (try_random_hor(x, y, dest_x, dest_y)) 
+            else if (try_random_dhor(x, y, dest_x, dest_y)) 
+            { 
+                move_cell(x, y, dest_x, dest_y);
+            }
+        }
+
+        if (cell.type == CellType::Smoke)
+        {
+            if (is_empty(x, y - 1))
+            {
+                move_cell(x, y, x, y - 1);
+            }
+            else if (try_random_uver(x, y, dest_x, dest_y))
+            {
+                move_cell(x, y, dest_x, dest_y);
+            }
+            else if (try_random_uhor(x, y, dest_x, dest_y)) 
             { 
                 move_cell(x, y, dest_x, dest_y);
             }
@@ -46,19 +68,23 @@ protected:
     }
 
 private:
-    bool has_type_at(int x, int y, CellType type)
+    template<int N>
+    bool has_types_at(int x, int y, std::array<CellType, N>&& type)
     {
-        const Cell* cell = get_cell(x, y);
-
-        if (cell != nullptr)
+        for (int i = 0; i < N; i++)
         {
-            return cell->type == type;
+            const Cell* cell = get_cell(x, y);
+
+            if (cell != nullptr && cell->type == type[i])
+            {
+                return true;
+            }
         }
 
         return false;
     }
 
-    bool try_random_ver(int x, int y, int& dest_x, int& dest_y)
+    bool try_random_dver(int x, int y, int& dest_x, int& dest_y)
     {
         Point dest = random_direction_movement({ x, y }, { x - 1, y + 1 }, { x + 1, y + 1 });
 
@@ -73,7 +99,37 @@ private:
         return false;
     }
 
-    bool try_random_hor(int x, int y, int& dest_x, int& dest_y)
+    bool try_random_uver(int x, int y, int& dest_x, int& dest_y)
+    {
+        Point dest = random_direction_movement({ x, y }, { x - 1, y - 1 }, { x + 1, y - 1 });
+
+        if (dest != Point::zero())
+        {
+            dest_x = dest.x;
+            dest_y = dest.y;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    bool try_random_dhor(int x, int y, int& dest_x, int& dest_y)
+    {
+        Point dest = random_direction_movement({ x, y }, { x - 1, y }, { x + 1, y });
+
+        if (dest != Point::zero())
+        {
+            dest_x = dest.x;
+            dest_y = dest.y;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    bool try_random_uhor(int x, int y, int& dest_x, int& dest_y)
     {
         Point dest = random_direction_movement({ x, y }, { x - 1, y }, { x + 1, y });
 

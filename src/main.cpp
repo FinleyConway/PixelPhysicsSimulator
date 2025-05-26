@@ -1,5 +1,6 @@
 #include <raylib.h>
 
+#include "core/cell.h"
 #include "simulation/chunk_manager.h"
 #include "core/chunk_updater.h"
 
@@ -12,9 +13,10 @@ void input(ChunkManager& sandbox, Cell& current_cell, Camera2D& camera, Vector2&
     if (IsKeyDown(KEY_W)) movement.y -= 512.0f * frame_time;
     if (IsKeyDown(KEY_S)) movement.y += 512.0f * frame_time;
     
-    if (IsKeyPressed(KEY_ONE))   current_cell = { CellType::Sand, YELLOW };
-    if (IsKeyPressed(KEY_TWO))   current_cell = { CellType::Water, BLUE };
-    if (IsKeyPressed(KEY_THREE)) current_cell = { CellType::Stone, GRAY };
+    if (IsKeyPressed(KEY_ONE))   current_cell = Cell::Sand;
+    if (IsKeyPressed(KEY_TWO))   current_cell = Cell::Water;
+    if (IsKeyPressed(KEY_THREE)) current_cell = Cell::Stone;
+    if (IsKeyPressed(KEY_FOUR)) current_cell = Cell::Smoke;
 
     if (IsKeyPressed(KEY_F1)) debug_mode = !debug_mode;
 
