@@ -5,9 +5,9 @@
 
 #include <raylib.h>
 
-#include "utils/point.h"
-#include "simulation/chunk.h"
-#include "core/chunk_context.h"
+#include "utils/point.hpp"
+#include "simulation/chunk.hpp"
+#include "core/chunk_context.hpp"
 
 class ChunkManager
 {

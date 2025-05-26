@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/point.h"
+#include "utils/point.hpp"
 
 struct ChunkContext
 {

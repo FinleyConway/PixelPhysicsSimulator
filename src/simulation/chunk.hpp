@@ -5,11 +5,11 @@
 
 #include <raylib.h>
 
-#include "core/cell.h"
-#include "core/chunk_context.h"
+#include "core/cell.hpp"
+#include "core/chunk_context.hpp"
 
-#include "utils/point.h"
-#include "utils/int_rect.h"
+#include "utils/point.hpp"
+#include "utils/int_rect.hpp"
 
 class Chunk
 {

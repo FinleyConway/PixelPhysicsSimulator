@@ -1,4 +1,4 @@
-#include "simulation/chunk_manager.h"
+#include "simulation/chunk_manager.hpp"
 
 #include <cmath>
 

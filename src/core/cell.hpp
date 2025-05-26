@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/colour.h"
+#include "utils/colour.hpp"
 
 enum class CellType
 {

@@ -1,5 +1,5 @@
-#include "simulation/chunk.h"
-#include "utils/colour.h"
+#include "simulation/chunk.hpp"
+#include "utils/colour.hpp"
 
 #include <cassert>
 #include <algorithm>

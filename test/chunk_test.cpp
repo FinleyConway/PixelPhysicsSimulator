@@ -2,9 +2,9 @@
 #include <raylib.h>
 
 
-#include "core/cell.h"
-#include "utils/int_rect.h"
-#include "simulation/chunk.h"
+#include "core/cell.hpp"
+#include "utils/int_rect.hpp"
+#include "simulation/chunk.hpp"
 
 void CustomLog2(int msgType, const char *text, va_list args)
 { 

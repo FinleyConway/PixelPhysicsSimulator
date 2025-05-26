@@ -1,10 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <raylib.h>
 
-#include "simulation/chunk_manager.h"
-#include "simulation/chunk_worker.h"
-#include "core/cell.h"
-#include "utils/colour.h"
+#include "simulation/chunk_manager.hpp"
+#include "simulation/chunk_worker.hpp"
+#include "core/cell.hpp"
+#include "utils/colour.hpp"
 
 class ChunkUpdater : public ChunkWorker
 {

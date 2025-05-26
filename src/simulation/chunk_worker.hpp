@@ -1,7 +1,7 @@
 #pragma once
 
-#include "chunk.h"
-#include "chunk_manager.h"
+#include "simulation/chunk.hpp"
+#include "simulation/chunk_manager.hpp"
 
 class ChunkWorker
 {

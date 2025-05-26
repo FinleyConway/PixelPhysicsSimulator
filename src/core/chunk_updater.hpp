@@ -1,10 +1,9 @@
 #pragma once
 
-#include "core/cell.h"
-#include "raylib.h"
-#include "simulation/chunk.h"
-#include "simulation/chunk_worker.h"
-#include "simulation/chunk_manager.h"
+#include "core/cell.hpp"
+#include "simulation/chunk.hpp"
+#include "simulation/chunk_worker.hpp"
+#include "simulation/chunk_manager.hpp"
 
 class ChunkUpdater : public ChunkWorker
 {

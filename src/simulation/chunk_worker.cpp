@@ -1,6 +1,6 @@
-#include "simulation/chunk_worker.h"
+#include "simulation/chunk_worker.hpp"
 
-#include "core/chunk_context.h"
+#include "core/chunk_context.hpp"
 
 ChunkWorker::ChunkWorker(ChunkManager& manager, Chunk* chunk) : m_manager(manager), m_chunk(chunk)
 {
