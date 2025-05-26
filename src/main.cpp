@@ -1,6 +1,7 @@
 #include <raylib.h>
 
 #include "core/cell.hpp"
+#include "generation/cave_gen.hpp"
 #include "simulation/chunk_manager.hpp"
 #include "core/chunk_updater.hpp"
 
@@ -108,13 +109,30 @@ int main()
         0, 1.0f
     };
 
+    CaveGen gen;
+    gen.generate_map();
+
+
     while (!WindowShouldClose())
     {
         float frame_time = GetFrameTime();
 
-        input(sandbox, current_cell, camera, movement, debug_mode, frame_time);
+        //input(sandbox, current_cell, camera, movement, debug_mode, frame_time);
 
-        update_sandbox(sandbox, camera, debug_mode, frame_time);
+        //update_sandbox(sandbox, camera, debug_mode, frame_time);
+
+        BeginDrawing();
+        ClearBackground(BLANK);
+
+        if (IsKeyPressed(KEY_SPACE))
+        {
+            gen.reset();
+            gen.generate_map();
+        }
+
+        gen.draw();
+
+        EndDrawing();
     }
 
     CloseWindow();
