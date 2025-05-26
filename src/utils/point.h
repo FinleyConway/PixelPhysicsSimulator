@@ -8,6 +8,8 @@ struct Point
     int x = 0;
     int y = 0;
 
+    static Point zero() { return {}; }
+
     bool operator==(Point other) const
     {
         return x == other.x && y == other.y;

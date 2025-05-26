@@ -1,7 +1,7 @@
 #include <raylib.h>
 
 #include "simulation/chunk_manager.h"
-#include "chunk_updater.h"
+#include "core/chunk_updater.h"
 
 void input(ChunkManager& sandbox, Cell& current_cell, Camera2D& camera, Vector2& movement, bool& debug_mode, float frame_time)
 {

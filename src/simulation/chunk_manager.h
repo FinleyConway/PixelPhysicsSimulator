@@ -7,7 +7,7 @@
 
 #include "utils/point.h"
 #include "simulation/chunk.h"
-#include "simulation/chunk_context.h"
+#include "core/chunk_context.h"
 
 class ChunkManager
 {
