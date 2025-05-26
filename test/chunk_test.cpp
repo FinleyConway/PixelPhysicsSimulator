@@ -2,7 +2,7 @@
 #include <raylib.h>
 
 
-#include "cell.h"
+#include "core/cell.h"
 #include "utils/int_rect.h"
 #include "simulation/chunk.h"
 
