@@ -69,8 +69,9 @@ TEST_CASE("Chunk Class Test", "[Chunk]")
         REQUIRE(chunk.get_cell({ 1, 1 }).type == CellType::Sand);
     }
 
-    SECTION("Wake up a region updates intermediate rect") {
-        Point pos{5, 5};
+    SECTION("Wake up a region updates intermediate rect") 
+    {
+        Point pos = { 5, 5 };
         chunk.wake_up(pos);
         chunk.update_rect();
 
