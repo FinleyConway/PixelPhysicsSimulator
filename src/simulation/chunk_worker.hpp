@@ -9,7 +9,7 @@ public:
     ChunkWorker(ChunkManager& manager, Chunk* chunk);
     virtual ~ChunkWorker() = default;
 
-    void update_chunk();
+    void update_chunk(float time_step);
 
 protected:
     virtual void update_cell(const Cell& cell, int x, int y) = 0;
@@ -19,6 +19,9 @@ protected:
     void move_cell(int from_x, int from_y, int to_x, int to_y);
     void swap_cells(int from_x, int from_y, int to_x, int to_y);
     bool is_empty(int x, int y) const;
+
+private:
+    void handle_life_time(Cell& cell, int x, int y, float time_step);
 
 private:
     ChunkManager& m_manager;

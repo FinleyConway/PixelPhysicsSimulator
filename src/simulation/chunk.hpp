@@ -20,8 +20,8 @@ public:
     Point get_position() const;
     const IntRect& get_current_rect() const;
 
-    const Cell& get_cell(int index) const;
-    const Cell& get_cell(Point position) const;
+    Cell& get_cell(int index);
+    Cell& get_cell(Point position);
 
     void set_cell(int index, const Cell& cell);
     void set_cell(Point position, const Cell& cell);

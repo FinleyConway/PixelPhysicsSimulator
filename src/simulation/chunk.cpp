@@ -27,14 +27,14 @@ const IntRect& Chunk::get_current_rect() const
     return m_dirty_rect;
 }
 
-const Cell& Chunk::get_cell(int index) const
+Cell& Chunk::get_cell(int index)
 {
     assert(in_bounds(index) && "Chunk::get_cell out of bounds!");
 
     return m_grid[index];
 }
 
-const Cell& Chunk::get_cell(Point position) const
+Cell& Chunk::get_cell(Point position)
 {
     assert(in_bounds(position) && "Chunk::get_cell out of bounds!");
 

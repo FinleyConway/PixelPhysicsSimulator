@@ -37,7 +37,7 @@ public:
                 assert(chunk != nullptr);
 
                 auto tmp = ChunkWorker(*this, chunk);
-                tmp.update_chunk();
+                tmp.update_chunk(c_time_step);
             }
 
             // apply moved cells to grid
