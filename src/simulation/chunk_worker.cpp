@@ -38,7 +38,12 @@ void ChunkWorker::set_cell(int x, int y, const Cell& cell)
 
 void ChunkWorker::move_cell(int from_x, int from_y, int to_x, int to_y)
 {
-    m_manager.move_cell(from_x, from_y, to_x, to_y);
+    m_manager.move_cell(from_x, from_y, to_x, to_y, false);
+}
+
+void ChunkWorker::swap_cells(int from_x, int from_y, int to_x, int to_y)
+{
+    m_manager.move_cell(from_x, from_y, to_x, to_y, true);
 }
 
 bool ChunkWorker::is_empty(int x, int y) const

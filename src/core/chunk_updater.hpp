@@ -17,17 +17,23 @@ protected:
         int dest_y = 0;
 
         if (cell.type == CellType::Sand)
-        {   
+        {
+            bool can_down = is_empty(x, y + 1);
             bool has_type_down = has_types_at<2>(x, y + 1, {
                 CellType::Water,
                 CellType::Smoke
             });
+            bool can_hor = try_random_dver(x, y, dest_x, dest_y);
 
-            if (is_empty(x, y + 1) || has_type_down)
+            if (can_down)
             {
                 move_cell(x, y, x, y + 1);
             }
-            else if (try_random_dver(x, y, dest_x, dest_y)) 
+            else if (has_type_down)
+            {
+                swap_cells(x, y, x, y + 1);
+            }
+            else if (can_hor) 
             {
                 move_cell(x, y, dest_x, dest_y);
             }
@@ -73,7 +79,7 @@ private:
         for (int i = 0; i < N; i++)
         {
             const Cell* cell = get_cell(x, y);
-
+            
             if (cell != nullptr && cell->type == type[i])
             {
                 return true;

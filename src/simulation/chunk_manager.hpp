@@ -17,7 +17,7 @@ public:
 
     const Cell* get_cell(int x, int y);  
     void set_cell(int x, int y, const Cell& cell);
-    void move_cell(int from_x, int from_y, int to_x, int to_y);
+    void move_cell(int from_x, int from_y, int to_x, int to_y, bool swap = false);
     bool is_empty(int x, int y) const;
 
     size_t get_total_chunks() const;

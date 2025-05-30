@@ -40,7 +40,7 @@ void ChunkManager::set_cell(int x, int y, const Cell& cell)
     }
 }
 
-void ChunkManager::move_cell(int from_x, int from_y, int to_x, int to_y)
+void ChunkManager::move_cell(int from_x, int from_y, int to_x, int to_y, bool swap)
 {
     const Point from_chunk_pos = grid_to_chunk(from_x, from_y);
     const Point to_chunk_pos = grid_to_chunk(to_x, to_y);
@@ -66,7 +66,7 @@ void ChunkManager::move_cell(int from_x, int from_y, int to_x, int to_y)
         if (notify.x != 0 && notify.y != 0) wake_up_chunk(from_x + notify.x, from_y + notify.y);
 
         // move cell
-        to_chunk->move_cell(from_local, to_local, from_chunk);
+        to_chunk->move_cell(from_local, to_local, swap, from_chunk);
     }
 }
 

@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.24...3.30)
 project(SandSimulator)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_CXX_FLAGS_DEBUG "-Og -g") # makes debug usable 
 
 include(FetchContent)
@@ -37,11 +37,6 @@ add_subdirectory(src)
 
 target_include_directories(SandSimulator PRIVATE ${Boost_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(SandSimulator PRIVATE SandSimulatorLib)
-
-set_target_properties(SandSimulator PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}
-    VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:SandSimulator>
-)
 
 # Tests
 add_subdirectory(test)

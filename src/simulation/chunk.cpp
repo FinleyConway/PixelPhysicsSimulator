@@ -71,7 +71,7 @@ void Chunk::set_cell(Point position, const Cell& cell)
     set_cell(get_index(position), cell);
 }
 
-void Chunk::move_cell(Point from_position, Point to_position, Chunk* chunk)
+void Chunk::move_cell(Point from_position, Point to_position, bool swap, Chunk* chunk)
 {
     assert(chunk != nullptr && "Chunk::move_cell chunk is nullptr!");
 
@@ -79,18 +79,19 @@ void Chunk::move_cell(Point from_position, Point to_position, Chunk* chunk)
     m_changes.emplace_back(
         get_index(from_position),
         get_index(to_position),
+        swap,
         chunk
     );
-}
-
-bool Chunk::in_bounds(Point position) const
-{
-    return position.x >= 0 && position.y >= 0 && position.x < c_width && position.y < c_height;
 }
 
 bool Chunk::in_bounds(int index) const
 {
     return index >= 0 && index < m_grid.size();
+}
+
+bool Chunk::in_bounds(Point position) const
+{
+    return position.x >= 0 && position.y >= 0 && position.x < c_width && position.y < c_height;
 }
 
 void Chunk::wake_up(Point position)
@@ -101,11 +102,16 @@ void Chunk::wake_up(Point position)
     set_next_rect(get_index(position));
 }
 
+bool Chunk::is_empty(int index) const
+{
+    assert(in_bounds(index) && "Chunk::is_empty out of bounds!");
+
+    return m_grid[index].type == CellType::Empty;
+}
+
 bool Chunk::is_empty(Point position) const
 {
-    assert(in_bounds(position) && "Chunk::is_empty out of bounds!");
-
-    return m_grid[get_index(position)].type == CellType::Empty;
+    return is_empty(get_index(position));
 }
 
 void Chunk::apply_moved_cells()
@@ -120,19 +126,21 @@ void Chunk::apply_moved_cells()
     });
 
     int prev_iter = 0;
-    m_changes.emplace_back(-1, -1, nullptr);
+    m_changes.emplace_back(-1, -1, false, nullptr);
     
     // handle destination confliction
     for (int i = 0; i < m_changes.size() - 1; i++)
     {
         if (m_changes[i].dst_index != m_changes[i + 1].dst_index)
         {
-            int chosen = GetRandomValue(i, prev_iter);
+            int chosen = GetRandomValue(prev_iter, i);
             auto& change = m_changes[chosen];
 
-            // swap cells from the source to destination
+            // move cells from the source to destination
+            Cell src_cell = change.swap ? get_cell(change.dst_index) : Cell();
+
             set_cell(change.dst_index, change.chunk->get_cell(change.src_index));
-            change.chunk->set_cell(change.src_index, Cell());
+            change.chunk->set_cell(change.src_index, src_cell);
 
             prev_iter = i + 1;
         }

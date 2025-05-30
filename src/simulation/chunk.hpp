@@ -26,13 +26,14 @@ public:
     void set_cell(int index, const Cell& cell);
     void set_cell(Point position, const Cell& cell);
 
-    void move_cell(Point from_position, Point to_position, Chunk* chunk);
+    void move_cell(Point from_position, Point to_position, bool swap, Chunk* chunk);
 
-    bool in_bounds(Point position) const;
     bool in_bounds(int index) const;
+    bool in_bounds(Point position) const;
     
     void wake_up(Point position);
 
+    bool is_empty(int index) const;
     bool is_empty(Point position) const;
 
     void apply_moved_cells();
@@ -55,6 +56,7 @@ private:
     {
         int src_index = 0;
         int dst_index = 0;
+        bool swap = false;
         Chunk* chunk = nullptr;
     };
 

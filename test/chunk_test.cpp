@@ -60,7 +60,7 @@ TEST_CASE("Chunk Class Test", "[Chunk]")
     {
         chunk.set_cell(0, { CellType::Sand, 0 });
 
-        chunk.move_cell({ 0, 0 }, { 1, 1 }, &chunk);
+        chunk.move_cell({ 0, 0 }, { 1, 1 }, false, &chunk);
 
         REQUIRE(chunk.get_cell(0).type == CellType::Sand);
         REQUIRE(chunk.get_cell({ 1, 1 }).type == CellType::Empty);

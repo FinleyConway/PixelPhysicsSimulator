@@ -117,22 +117,22 @@ int main()
     {
         float frame_time = GetFrameTime();
 
-        //input(sandbox, current_cell, camera, movement, debug_mode, frame_time);
+        input(sandbox, current_cell, camera, movement, debug_mode, frame_time);
 
-        //update_sandbox(sandbox, camera, debug_mode, frame_time);
+        update_sandbox(sandbox, camera, debug_mode, frame_time);
 
-        BeginDrawing();
-        ClearBackground(BLANK);
+        // BeginDrawing();
+        // ClearBackground(BLANK);
 
-        if (IsKeyPressed(KEY_SPACE))
-        {
-            gen.reset();
-            gen.generate_map();
-        }
+        // if (IsKeyPressed(KEY_SPACE))
+        // {
+        //     gen.reset();
+        //     gen.generate_map();
+        // }
 
-        gen.draw();
+        // gen.draw();
 
-        EndDrawing();
+        // EndDrawing();
     }
 
     CloseWindow();
