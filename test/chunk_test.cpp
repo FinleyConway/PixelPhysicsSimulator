@@ -39,7 +39,7 @@ TEST_CASE("Chunk Class Test", "[Chunk]")
     SECTION("Set and get cell") 
     {
         Point pos = { 2, 3 };
-        Cell cell = { CellType::Sand, 0 };
+        Cell cell = Cell::Sand;
 
         chunk.set_cell(pos, cell);
         const Cell& result = chunk.get_cell(pos);
@@ -58,7 +58,7 @@ TEST_CASE("Chunk Class Test", "[Chunk]")
 
     SECTION("Move cell in chunk")
     {
-        chunk.set_cell(0, { CellType::Sand, 0 });
+        chunk.set_cell(0, Cell::Sand);
 
         chunk.move_cell({ 0, 0 }, { 1, 1 }, false, &chunk);
 

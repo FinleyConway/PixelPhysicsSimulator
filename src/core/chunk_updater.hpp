@@ -25,18 +25,22 @@ protected:
             });
             bool can_hor = try_random_dver(x, y, dest_x, dest_y);
 
-            if (can_down)
+            // if (can_down)
+            // {
+            //     move_cell(x, y, x, y + 1);
+            // }
+            // else
             {
-                move_cell(x, y, x, y + 1);
+                push_cell(x, y, 5, -5);
             }
-            else if (has_type_down)
-            {
-                swap_cells(x, y, x, y + 1);
-            }
-            else if (can_hor) 
-            {
-                move_cell(x, y, dest_x, dest_y);
-            }
+            // else if (has_type_down)
+            // {
+            //     swap_cells(x, y, x, y + 1);
+            // }
+            // else if (can_hor) 
+            // {
+            //     move_cell(x, y, dest_x, dest_y);
+            // }
         }
 
         if (cell.type == CellType::Water)

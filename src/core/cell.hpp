@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils/colour.hpp"
+#include "utils/point.hpp"
 
 enum class CellType
 {
@@ -17,7 +18,11 @@ struct Cell
 {
     CellType type = CellType::Empty;
     Colour colour = Colour::Blank;
+    Point velocity;
     float life_time = -1; // seconds
+
+    constexpr Cell() = default;
+    constexpr Cell(CellType type, Colour colour, float life_time = -1) : type(type), colour(colour), life_time(life_time) { }
 
     const static Cell Empty;
     const static Cell Sand;

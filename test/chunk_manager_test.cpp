@@ -44,9 +44,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
 
     SECTION("Set cell in chunk")
     {
-        manager.set_cell(0, 0, {
-            CellType::Sand, 0
-        });
+        manager.set_cell(0, 0, Cell::Sand);
 
         const Cell* cell = manager.get_cell(0, 0);
 
@@ -59,9 +57,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
 
     SECTION("Move cell in chunk")
     {
-        manager.set_cell(0, 0, {
-            CellType::Sand, 0
-        });
+        manager.set_cell(0, 0, Cell::Sand);
 
         manager.move_cell(0, 0, 20, 20);
 
@@ -89,7 +85,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
 
     SECTION("Move within same chunk")
     {
-        manager.set_cell(2, 2, { CellType::Sand, 0 });
+        manager.set_cell(2, 2, Cell::Sand);
 
         manager.move_cell(2, 2, 3, 3); // within same chunk
 
@@ -102,7 +98,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
 
     SECTION("Move from empty cell should not affect destination")
     {
-        manager.set_cell(10, 10, { CellType::Empty, 0 });
+        manager.set_cell(10, 10, Cell::Sand);
 
         manager.move_cell(10, 10, 12, 12);
 
@@ -115,8 +111,8 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
 
     SECTION("Move to occupied cell")
     {
-        manager.set_cell(5, 5, { CellType::Sand, 0 });
-        manager.set_cell(6, 6, { CellType::Water, 0 });
+        manager.set_cell(5, 5, Cell::Sand);
+        manager.set_cell(6, 6, Cell::Water);
 
         manager.move_cell(5, 5, 6, 6);
         for (int i = 0; i < 10; i++)
@@ -134,7 +130,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
 
     SECTION("Cell not empty in chunk")
     {
-        manager.set_cell(0, 0, { CellType::Sand, 0 });
+        manager.set_cell(0, 0, Cell::Sand);
 
         REQUIRE(manager.is_empty(0, 0) == false);
     }
