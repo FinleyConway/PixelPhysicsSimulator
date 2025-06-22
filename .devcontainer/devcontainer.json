@@ -1,0 +1,18 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/cpp
+{
+	"name": "C++",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"features": {
+		"ghcr.io/rocker-org/devcontainer-features/apt-packages": {
+			"packages": "libboost-all-dev, libasound2-dev, libx11-dev, libxrandr-dev, libxi-dev, libgl1-mesa-dev, libglu1-mesa-dev, libxcursor-dev, libxinerama-dev, libwayland-dev, libxkbcommon-dev, wayland-protocols"
+		}
+	},
+
+	"runArgs": [
+		"-e", "DISPLAY",
+		"-v", "/tmp/.X11-unix:/tmp/.X11-unix"
+	]
+}

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24...3.30)
+cmake_minimum_required(VERSION 3.22...3.30)
 project(SandSimulator)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
@@ -19,8 +19,6 @@ FetchContent_Declare(
     raylib
     URL https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz
 )
-set(GLFW_BUILD_WAYLAND ON)
-set(GLFW_BUILD_X11 OFF)
 FetchContent_MakeAvailable(raylib)
 
 # Catch2
