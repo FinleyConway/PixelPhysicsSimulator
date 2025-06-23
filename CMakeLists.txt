@@ -19,6 +19,8 @@ FetchContent_Declare(
     raylib
     URL https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz
 )
+set(GLFW_BUILD_WAYLAND ON)
+set(GLFW_BUILD_X11 OFF)
 FetchContent_MakeAvailable(raylib)
 
 # Catch2

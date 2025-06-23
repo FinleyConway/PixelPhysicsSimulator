@@ -1,5 +1,3 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/cpp
 {
 	"name": "C++",
 	"build": {
@@ -10,9 +8,17 @@
 			"packages": "libboost-all-dev, libasound2-dev, libx11-dev, libxrandr-dev, libxi-dev, libgl1-mesa-dev, libglu1-mesa-dev, libxcursor-dev, libxinerama-dev, libwayland-dev, libxkbcommon-dev, wayland-protocols"
 		}
 	},
-
+  // allow wayland to work
 	"runArgs": [
-		"-e", "DISPLAY",
-		"-v", "/tmp/.X11-unix:/tmp/.X11-unix"
-	]
+    "--security-opt=label=disable",
+    "--userns=keep-id",
+    "--device=/dev/dri",
+    "-e", "XDG_RUNTIME_DIR=/tmp",
+    "-e", "WAYLAND_DISPLAY=${env:WAYLAND_DISPLAY}",
+    "-v", "${env:XDG_RUNTIME_DIR}/${env:WAYLAND_DISPLAY}:/tmp/${env:WAYLAND_DISPLAY}"
+  ],
+  "containerEnv": {
+    "XDG_RUNTIME_DIR": "/tmp",
+    "WAYLAND_DISPLAY": "${env:WAYLAND_DISPLAY}"
+  }
 }
