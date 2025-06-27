@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <raylib.h>
 
-#include "simulation/chunk_manager.hpp"
+#include "simulation/pixel_world.hpp"
 #include "simulation/chunk_worker.hpp"
 #include "core/cell.hpp"
 #include "utils/colour.hpp"
@@ -9,7 +9,7 @@
 class ChunkUpdater : public ChunkWorker
 {
 public:
-    ChunkUpdater(ChunkManager& manager, Chunk* chunk) : ChunkWorker(manager, chunk) { }
+    ChunkUpdater(PixelWorld& manager, Chunk* chunk) : ChunkWorker(manager, chunk) { }
 
 protected:
     void update_cell(const Cell& cell, int x, int y)
@@ -27,7 +27,7 @@ TEST_CASE("Chunk Manager Class Test", "[ChunkManager]")
     SetTraceLogCallback(CustomLog);
     InitWindow(1280, 720, "Pixel Physics");
 
-    ChunkManager manager;
+    PixelWorld manager;
 
     SECTION("Get cell from chunk")
     {

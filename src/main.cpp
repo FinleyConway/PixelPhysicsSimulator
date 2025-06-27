@@ -1,10 +1,10 @@
 #include <raylib.h>
 
 #include "core/cell.hpp"
-#include "simulation/chunk_manager.hpp"
+#include "simulation/pixel_world.hpp"
 #include "core/chunk_updater.hpp"
 
-void input(ChunkManager& sandbox, Cell& current_cell, Camera2D& camera, Vector2& movement, bool& debug_mode, float frame_time)
+void input(PixelWorld& sandbox, Cell& current_cell, Camera2D& camera, Vector2& movement, bool& debug_mode, float frame_time)
 {
     const int brush_radius = 2;
 
@@ -63,7 +63,7 @@ Rectangle handle_camera_view(const Camera2D& camera)
     };
 }
 
-void update_sandbox(ChunkManager& manager, const Camera2D& camera, bool debug_mode, float frame_time)
+void update_sandbox(PixelWorld& manager, const Camera2D& camera, bool debug_mode, float frame_time)
 {
     auto view = handle_camera_view(camera);
 
@@ -93,7 +93,7 @@ int main()
 {
     InitWindow(1280, 720, "Pixel Physics");
 
-    ChunkManager sandbox;
+    PixelWorld sandbox;
     bool debug_mode = false;
     Cell current_cell;
 

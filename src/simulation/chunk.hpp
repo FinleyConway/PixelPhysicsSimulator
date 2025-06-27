@@ -1,20 +1,17 @@
 #pragma once
 
-#include <array>
-#include <boost/container/static_vector.hpp>
+#include <vector>
 
 #include <raylib.h>
 
 #include "core/cell.hpp"
-#include "core/chunk_context.hpp"
-
 #include "utils/point.hpp"
 #include "utils/int_rect.hpp"
 
 class Chunk
 {
 public:
-    Chunk(Point position);
+    Chunk(Point position, Point size, int cell_size);
     ~Chunk();
 
     Point get_position() const;
@@ -48,7 +45,6 @@ private:
     int get_index(Point position) const;
 
     void set_next_rect(int index);
-    void generate_bounds();
     void reset_rect(IntRect& rect);
 
 private:
@@ -60,20 +56,18 @@ private:
         Chunk* chunk = nullptr;
     };
 
-    static constexpr int c_width = ChunkContext::width;
-    static constexpr int c_height = ChunkContext::height;
-    static constexpr int c_cell_size = ChunkContext::cell_size;
-
 private:
     Point m_position;
+    Point m_size;
+    int m_cell_size = 0;
+
     int m_filled_cells = 0;
     bool m_drawn = false;
 
-    IntRect m_final_rect;
     IntRect m_intermediate_rect;
     IntRect m_dirty_rect;
 
-    boost::container::static_vector<CellChange, c_width * c_height> m_changes;
-    std::array<Cell, c_width * c_height> m_grid;
+    std::vector<CellChange> m_changes;
+    std::vector<Cell> m_grid;
     RenderTexture2D m_render_texture;
 };

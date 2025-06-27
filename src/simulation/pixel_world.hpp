@@ -1,29 +1,39 @@
 #pragma once
 
 #include <unordered_map>
-#include <boost/container/static_vector.hpp>
+#include <cassert>
 
 #include <raylib.h>
 
 #include "utils/point.hpp"
 #include "simulation/chunk.hpp"
-#include "core/chunk_context.hpp"
 
-class ChunkManager
+struct ChunkManagerSpec
+{
+    Point chunk_size = { 16, 16 };
+    int chunk_cell_size = 4;
+
+    Point min_chunk_pos = { -5, -5 };
+    Point max_chunk_pos = { +5, +5 }; 
+};
+
+class PixelWorld
 {
 public:
-    ChunkManager();
-    ~ChunkManager();
+    PixelWorld(const ChunkManagerSpec& spec = ChunkManagerSpec());
+    ~PixelWorld();
 
     const Cell* get_cell(int x, int y);  
     void set_cell(int x, int y, const Cell& cell);
     void move_cell(int from_x, int from_y, int to_x, int to_y, bool swap = false);
     bool is_empty(int x, int y) const;
 
+    Point get_chunk_size() const;
+    int get_chunk_cell_size() const;
     size_t get_total_chunks() const;
 
 public:
-    template<typename ChunkWorker>
+    template<typename TChunkWorker>
     void update(float delta_time)
     {
         m_accumulator += delta_time;
@@ -36,7 +46,7 @@ public:
             {
                 assert(chunk != nullptr);
 
-                auto tmp = ChunkWorker(*this, chunk);
+                auto tmp = TChunkWorker(*this, chunk);
                 tmp.update_chunk(c_time_step);
             }
 
@@ -69,6 +79,7 @@ public:
     Point world_to_chunk(float x, float y) const;
 
 private:
+    int get_max_chunks() const;
     bool in_world_bounds(const Point& chunk_position);
     bool is_chunk_in_view(const Chunk* chunk, const Rectangle& view) const;
 
@@ -78,18 +89,14 @@ private:
     void wake_up_chunk(int x, int y);
 
 private:
-    static constexpr int c_width = ChunkContext::width;
-    static constexpr int c_height = ChunkContext::height;
-    static constexpr int c_cell_size = ChunkContext::cell_size;
-
-    static constexpr Point c_min_chunk_pos = ChunkContext::min_chunk_pos;
-    static constexpr Point c_max_chunk_pos = ChunkContext::max_chunk_pos;
-    static constexpr int c_max_chunks = ChunkContext::max_chunks;
-
-private:
     const float c_time_step = 1.0f / 60.0f;
     float m_accumulator = 0;
 
+    Point m_chunk_size;
+    int m_chunk_cell_size = 0;
+    Point m_min_chunk_pos;
+    Point m_max_chunk_pos;
+
     std::unordered_map<Point, Chunk*> m_chunk_lookup;
-    boost::container::static_vector<Chunk*, c_max_chunks> m_chunks;
+    std::vector<Chunk*> m_chunks;
 };

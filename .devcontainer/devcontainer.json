@@ -3,12 +3,21 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.cmake-tools"
+      ]
+    }
+  },
 	"features": {
 		"ghcr.io/rocker-org/devcontainer-features/apt-packages": {
-			"packages": "libboost-all-dev, libasound2-dev, libx11-dev, libxrandr-dev, libxi-dev, libgl1-mesa-dev, libglu1-mesa-dev, libxcursor-dev, libxinerama-dev, libwayland-dev, libxkbcommon-dev, wayland-protocols"
+			"packages": "clangd, libasound2-dev, libx11-dev, libxrandr-dev, libxi-dev, libgl1-mesa-dev, libglu1-mesa-dev, libxcursor-dev, libxinerama-dev, libwayland-dev, libxkbcommon-dev, wayland-protocols"
 		}
 	},
-  // allow wayland to work
+  // allow wayland to work, https://zihad.com.bd/posts/setup-flatpak-vscode-devcontainer-podman-wayland-gui/
 	"runArgs": [
     "--security-opt=label=disable",
     "--userns=keep-id",

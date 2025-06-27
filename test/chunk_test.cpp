@@ -16,7 +16,7 @@ TEST_CASE("Chunk Class Test", "[Chunk]")
     SetTraceLogCallback(CustomLog2);
     InitWindow(1280, 720, "Pixel Physics");
 
-    Chunk chunk({ 0, 0 });
+    Chunk chunk({ 0, 0 }, { 16, 16 }, 4);
 
     SECTION("Chunk position")
     {
@@ -25,9 +25,9 @@ TEST_CASE("Chunk Class Test", "[Chunk]")
 
     SECTION("Initially all cells are empty") 
     {
-        for (int x = 0; x < ChunkContext::width; x++) 
+        for (int x = 0; x < 16; x++) 
         {
-            for (int y = 0; y < ChunkContext::height; y++) 
+            for (int y = 0; y < 16; y++) 
             {
                 REQUIRE(chunk.is_empty({x, y}));
             }
@@ -53,7 +53,7 @@ TEST_CASE("Chunk Class Test", "[Chunk]")
         Point outOfBounds = { -1, -1 };
 
         REQUIRE_FALSE(chunk.in_bounds(outOfBounds));
-        REQUIRE_FALSE(chunk.in_bounds(ChunkContext::width * ChunkContext::height));
+        REQUIRE_FALSE(chunk.in_bounds(16 * 16));
     }
 
     SECTION("Move cell in chunk")

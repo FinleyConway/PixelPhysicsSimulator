@@ -1,13 +1,18 @@
-#include "simulation/chunk_manager.hpp"
+#include "simulation/pixel_world.hpp"
+#include "simulation/chunk.hpp"
 
 #include <cmath>
 
-ChunkManager::ChunkManager()
+PixelWorld::PixelWorld(const ChunkManagerSpec& spec) :
+    m_chunk_size(spec.chunk_size),
+    m_chunk_cell_size(spec.chunk_cell_size),
+    m_min_chunk_pos(spec.min_chunk_pos),
+    m_max_chunk_pos(spec.max_chunk_pos)
 {
-    m_chunk_lookup.reserve(c_max_chunks);
+    m_chunk_lookup.reserve(get_max_chunks());
 }
 
-ChunkManager::~ChunkManager()
+PixelWorld::~PixelWorld()   
 {
     for (auto* chunk : m_chunks)
     {
@@ -15,7 +20,7 @@ ChunkManager::~ChunkManager()
     }
 }
 
-const Cell* ChunkManager::get_cell(int x, int y)
+const Cell* PixelWorld::get_cell(int x, int y)
 {
     const Point chunk_position = grid_to_chunk(x, y);
     const Point local_position = grid_to_chunk_local(x, y);
@@ -29,7 +34,7 @@ const Cell* ChunkManager::get_cell(int x, int y)
     return nullptr;
 }    
 
-void ChunkManager::set_cell(int x, int y, const Cell& cell)
+void PixelWorld::set_cell(int x, int y, const Cell& cell)
 {
     const Point chunk_position = grid_to_chunk(x, y);
     const Point local_position = grid_to_chunk_local(x, y);
@@ -40,7 +45,7 @@ void ChunkManager::set_cell(int x, int y, const Cell& cell)
     }
 }
 
-void ChunkManager::move_cell(int from_x, int from_y, int to_x, int to_y, bool swap)
+void PixelWorld::move_cell(int from_x, int from_y, int to_x, int to_y, bool swap)
 {
     const Point from_chunk_pos = grid_to_chunk(from_x, from_y);
     const Point to_chunk_pos = grid_to_chunk(to_x, to_y);
@@ -56,9 +61,9 @@ void ChunkManager::move_cell(int from_x, int from_y, int to_x, int to_y, bool sw
 
         // get chunk offset if local pos is at the edges
         if (from_local.x == 0)            notify.x = -1;
-        if (from_local.x == c_width - 1)  notify.x = +1;
+        if (from_local.x == m_chunk_size.x - 1)  notify.x = +1;
         if (from_local.y == 0)            notify.y = -1;
-        if (from_local.y == c_height - 1) notify.y = +1;
+        if (from_local.y == m_chunk_size.y - 1) notify.y = +1;
 
         // notify neighour chunks
         if (notify.x != 0)                  wake_up_chunk(from_x + notify.x, from_y);
@@ -70,7 +75,7 @@ void ChunkManager::move_cell(int from_x, int from_y, int to_x, int to_y, bool sw
     }
 }
 
-bool ChunkManager::is_empty(int x, int y) const
+bool PixelWorld::is_empty(int x, int y) const
 {
     const Point chunk_position = grid_to_chunk(x, y);
     const Point local_position = grid_to_chunk_local(x, y);
@@ -83,12 +88,22 @@ bool ChunkManager::is_empty(int x, int y) const
     return true;
 }
 
-size_t ChunkManager::get_total_chunks() const
+Point PixelWorld::get_chunk_size() const
+{
+    return m_chunk_size;
+}
+
+int PixelWorld::get_chunk_cell_size() const
+{
+    return m_chunk_cell_size;
+}
+
+size_t PixelWorld::get_total_chunks() const
 {
     return m_chunks.size();
 }
 
-void ChunkManager::pre_draw(const Rectangle& view)
+void PixelWorld::pre_draw(const Rectangle& view)
 {
     // prepare all active chunks in view
     for (auto* chunk : m_chunks)
@@ -102,7 +117,7 @@ void ChunkManager::pre_draw(const Rectangle& view)
     }
 }
 
-void ChunkManager::draw(const Rectangle& view, bool debug)
+void PixelWorld::draw(const Rectangle& view, bool debug)
 {
     // draw all active chunks in view
     for (const auto* chunk : m_chunks)
@@ -116,52 +131,57 @@ void ChunkManager::draw(const Rectangle& view, bool debug)
     }
 }
 
-Point ChunkManager::pos_to_grid(float x, float y) const
+Point PixelWorld::pos_to_grid(float x, float y) const
 {
     return { 
-        static_cast<int>(std::floor(x / c_cell_size)), 
-        static_cast<int>(std::floor(y / c_cell_size)) 
+        static_cast<int>(std::floor(x / m_chunk_cell_size)), 
+        static_cast<int>(std::floor(y / m_chunk_cell_size)) 
     };
 }    
 
-Point ChunkManager::grid_to_chunk(int x, int y) const
+Point PixelWorld::grid_to_chunk(int x, int y) const
 {
     return { 
-        x >= 0 ? x / c_width : (x - c_width + 1) / c_width,
-        y >= 0 ? y / c_height : (y - c_height + 1) / c_height,
+        x >= 0 ? x / m_chunk_size.x : (x - m_chunk_size.x + 1) / m_chunk_size.x,
+        y >= 0 ? y / m_chunk_size.y : (y - m_chunk_size.y + 1) / m_chunk_size.y,
     };
 }
 
-Point ChunkManager::grid_to_chunk_local(int x, int y) const
+Point PixelWorld::grid_to_chunk_local(int x, int y) const
 {
     return {
-        ((x % c_width + c_width) % c_width),
-        ((y % c_height + c_height) % c_height)
+        ((x % m_chunk_size.x + m_chunk_size.x) % m_chunk_size.x),
+        ((y % m_chunk_size.y + m_chunk_size.y) % m_chunk_size.y)
     };
 }
 
-Point ChunkManager::world_to_chunk(float x, float y) const
+Point PixelWorld::world_to_chunk(float x, float y) const
 {
     return {
-        static_cast<int>(std::floor(x / (c_width * c_cell_size))),
-        static_cast<int>(std::floor(y / (c_height * c_cell_size)))
+        static_cast<int>(std::floor(x / (m_chunk_size.x * m_chunk_cell_size))),
+        static_cast<int>(std::floor(y / (m_chunk_size.y * m_chunk_cell_size)))
     };
 }
 
-bool ChunkManager::in_world_bounds(const Point& chunk_position)
+int PixelWorld::get_max_chunks() const
+{
+    return (m_max_chunk_pos.x - m_min_chunk_pos.x + 1) * (m_max_chunk_pos.y - m_min_chunk_pos.y + 1);
+}
+
+bool PixelWorld::in_world_bounds(const Point& chunk_position)
 {
     return (
-        chunk_position.x >= c_min_chunk_pos.x && 
-        chunk_position.x <= c_max_chunk_pos.x &&
-        chunk_position.y >= c_min_chunk_pos.y && 
-        chunk_position.y <= c_max_chunk_pos.y
+        chunk_position.x >= m_min_chunk_pos.x && 
+        chunk_position.x <= m_max_chunk_pos.x &&
+        chunk_position.y >= m_min_chunk_pos.y && 
+        chunk_position.y <= m_max_chunk_pos.y
     );
 }
 
-bool ChunkManager::is_chunk_in_view(const Chunk* chunk, const Rectangle& view) const
+bool PixelWorld::is_chunk_in_view(const Chunk* chunk, const Rectangle& view) const
 {
     const Point position = chunk->get_position();
-    const Point size = { c_width * c_cell_size, c_height * c_cell_size };
+    const Point size = { m_chunk_size.x * m_chunk_cell_size, m_chunk_size.y * m_chunk_cell_size };
     const Rectangle chunkRect = {
         static_cast<float>(position.x),
         static_cast<float>(position.y),
@@ -172,7 +192,7 @@ bool ChunkManager::is_chunk_in_view(const Chunk* chunk, const Rectangle& view) c
     return CheckCollisionRecs(view, chunkRect);
 }
 
-Chunk* ChunkManager::create_chunk(Point chunk_position)
+Chunk* PixelWorld::create_chunk(Point chunk_position)
 {
     // only create a chunk in the world bounds
     // prevent static_vector from overflowing
@@ -180,11 +200,11 @@ Chunk* ChunkManager::create_chunk(Point chunk_position)
     {
         // create chunk at world position
         const Point position = {
-            chunk_position.x * c_width * c_cell_size,
-            chunk_position.y * c_height * c_cell_size,
+            chunk_position.x * m_chunk_size.x * m_chunk_cell_size,
+            chunk_position.y * m_chunk_size.y * m_chunk_cell_size,
         };
 
-        auto* chunk = new Chunk(position);
+        auto* chunk = new Chunk(position, m_chunk_size, m_chunk_cell_size);
 
         // attempt to create chunk and return a reference
         auto [it, inserted] = m_chunk_lookup.try_emplace(chunk_position, chunk);
@@ -201,7 +221,7 @@ Chunk* ChunkManager::create_chunk(Point chunk_position)
     return nullptr;
 }
 
-Chunk* ChunkManager::get_chunk_or_create(Point chunk_position)
+Chunk* PixelWorld::get_chunk_or_create(Point chunk_position)
 {
     // return an existing chunk
     if (m_chunk_lookup.contains(chunk_position))
@@ -214,7 +234,7 @@ Chunk* ChunkManager::get_chunk_or_create(Point chunk_position)
     return create_chunk(chunk_position); 
 }
 
-void ChunkManager::remove_empty_chunks()
+void PixelWorld::remove_empty_chunks()
 {
     // go through each chunk and check if its empty
     for (auto it = m_chunks.begin(); it != m_chunks.end();)
@@ -239,7 +259,7 @@ void ChunkManager::remove_empty_chunks()
     }
 }
 
-void ChunkManager::wake_up_chunk(int x, int y)
+void PixelWorld::wake_up_chunk(int x, int y)
 {
     const Point chunk_position = grid_to_chunk(x, y);
     const Point local_position = grid_to_chunk_local(x, y);

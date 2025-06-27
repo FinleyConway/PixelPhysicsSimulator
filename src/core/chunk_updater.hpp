@@ -3,12 +3,12 @@
 #include "core/cell.hpp"
 #include "simulation/chunk.hpp"
 #include "simulation/chunk_worker.hpp"
-#include "simulation/chunk_manager.hpp"
+#include "simulation/pixel_world.hpp"
 
 class ChunkUpdater : public ChunkWorker
 {
 public:
-    ChunkUpdater(ChunkManager& manager, Chunk* chunk) : ChunkWorker(manager, chunk) { }
+    ChunkUpdater(PixelWorld& manager, Chunk* chunk) : ChunkWorker(manager, chunk) { }
 
 protected:
     void update_cell(const Cell& cell, int x, int y)

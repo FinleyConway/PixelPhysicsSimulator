@@ -4,11 +4,14 @@
 #include <cassert>
 #include <algorithm>
 
-Chunk::Chunk(Point position) : m_position(position)
+Chunk::Chunk(Point position, Point size, int cell_size) : 
+    m_position(position),
+    m_size(size),
+    m_cell_size(cell_size)
 {
-    m_render_texture = LoadRenderTexture(c_width * c_cell_size, c_height * c_cell_size);
+    m_render_texture = LoadRenderTexture(m_size.x * m_cell_size, m_size.x * m_cell_size);
+    m_grid.resize(m_size.x * size.y);
 
-    reset_rect(m_final_rect);
     reset_rect(m_intermediate_rect);
 }
 
@@ -91,7 +94,7 @@ bool Chunk::in_bounds(int index) const
 
 bool Chunk::in_bounds(Point position) const
 {
-    return position.x >= 0 && position.y >= 0 && position.x < c_width && position.y < c_height;
+    return position.x >= 0 && position.y >= 0 && position.x < m_size.x && position.y < m_size.y;
 }
 
 void Chunk::wake_up(Point position)
@@ -137,7 +140,7 @@ void Chunk::apply_moved_cells()
             auto& change = m_changes[chosen];
 
             // move cells from the source to destination
-            Cell src_cell = change.swap ? get_cell(change.dst_index) : Cell();
+            Cell src_cell = change.swap ? get_cell(change.dst_index) : Cell::Empty;
 
             set_cell(change.dst_index, change.chunk->get_cell(change.src_index));
             change.chunk->set_cell(change.src_index, src_cell);
@@ -161,23 +164,20 @@ void Chunk::pre_draw()
 {
     if (m_drawn) return;
 
-    // generate bounds for drawing
-    generate_bounds(); // bit slow...
-
     // draw all valid cells
     BeginTextureMode(m_render_texture);
     ClearBackground(BLANK);
 
-    for (int x = m_final_rect.min_x; x <= m_final_rect.max_x; x++)
+    for (int x = 0; x < m_size.x; x++)
     {
-        for (int y = m_final_rect.min_y; y <= m_final_rect.max_y; y++)
+        for (int y = 0; y < m_size.y; y++)
         {
             const Cell& current_cell = get_cell({ x, y });
             const Colour cell_colour = current_cell.colour;
             
             if (current_cell.type != CellType::Empty)
             {
-                DrawRectangle(x * c_cell_size, y * c_cell_size, c_cell_size, c_cell_size, { 
+                DrawRectangle(x * m_cell_size, y * m_cell_size, m_cell_size, m_cell_size, { 
                     cell_colour.r, cell_colour.g, cell_colour.b, cell_colour.a 
                 });
             }
@@ -210,24 +210,15 @@ void Chunk::draw(bool debug) const
     if (debug)
     {
         // draw chunk area
-        DrawRectangleLines(m_position.x, m_position.y, c_width * c_cell_size, c_height * c_cell_size, GREEN);
+        DrawRectangleLines(m_position.x, m_position.y, m_size.x * m_cell_size, m_size.y * m_cell_size, GREEN);
 
         // draw active or sleep rect
         DrawRectangleLines(
-            m_position.x + m_dirty_rect.min_x * c_cell_size,
-            m_position.y + m_dirty_rect.min_y * c_cell_size,
-            (m_dirty_rect.max_x - m_dirty_rect.min_x + 1) * c_cell_size,
-            (m_dirty_rect.max_y - m_dirty_rect.min_y + 1) * c_cell_size,
+            m_position.x + m_dirty_rect.min_x * m_cell_size,
+            m_position.y + m_dirty_rect.min_y * m_cell_size,
+            (m_dirty_rect.max_x - m_dirty_rect.min_x + 1) * m_cell_size,
+            (m_dirty_rect.max_y - m_dirty_rect.min_y + 1) * m_cell_size,
                 (m_dirty_rect.min_x > m_dirty_rect.max_x || m_dirty_rect.min_y > m_dirty_rect.max_y) ? BLUE : RED
-        );
-
-        // draw drawing bounds
-        DrawRectangleLines(
-            m_position.x + m_final_rect.min_x * c_cell_size,
-            m_position.y + m_final_rect.min_y * c_cell_size,
-            (m_final_rect.max_x - m_final_rect.min_x + 1) * c_cell_size,
-            (m_final_rect.max_y - m_final_rect.min_y + 1) * c_cell_size,
-            WHITE
         );
 
         // draw pixel count
@@ -242,19 +233,19 @@ bool Chunk::should_remove() const
 
 int Chunk::get_index(Point position) const
 {
-    return position.x + position.y * c_width;
+    return position.x + position.y * m_size.x;
 }
 
 void Chunk::set_next_rect(int index)
 {
     // generate a rect based on the placed tiles
-    int x = index % c_width;
-    int y = index / c_width;
+    int x = index % m_size.x;
+    int y = index / m_size.x;
 
     int min_x = std::max(x - 2, 0);
     int min_y = std::max(y - 2, 0);
-    int max_x = std::min(x + 2, c_width - 1);
-    int max_y = std::min(y + 2, c_height - 1);
+    int max_x = std::min(x + 2, m_size.x - 1);
+    int max_y = std::min(y + 2, m_size.y - 1);
 
     m_intermediate_rect.min_x = std::min(m_intermediate_rect.min_x, min_x);
     m_intermediate_rect.min_y = std::min(m_intermediate_rect.min_y, min_y);
@@ -262,30 +253,10 @@ void Chunk::set_next_rect(int index)
     m_intermediate_rect.max_y = std::max(m_intermediate_rect.max_y, max_y);
 }
 
-void Chunk::generate_bounds() 
-{
-    // generate a rect based on all the valid tiles
-    reset_rect(m_final_rect);
-
-    for (int x = 0; x < c_width; x++)
-    {
-        for (int y = 0; y < c_height; y++)
-        {
-            if (get_cell({ x, y }).type != CellType::Empty)
-            {
-                m_final_rect.min_x = std::min(m_final_rect.min_x, x);
-                m_final_rect.min_y = std::min(m_final_rect.min_y, y);
-                m_final_rect.max_x = std::max(m_final_rect.max_x, x);
-                m_final_rect.max_y = std::max(m_final_rect.max_y, y);
-            }
-        }
-    }
-}
-
 void Chunk::reset_rect(IntRect& rect)
 {
-    rect.min_x = c_width;
-    rect.min_y = c_height;
+    rect.min_x = m_size.x;
+    rect.min_y = m_size.y;
     rect.max_x = -1;
     rect.max_y = -1;
 }

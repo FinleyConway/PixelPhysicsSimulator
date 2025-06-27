@@ -1,8 +1,6 @@
 #include "simulation/chunk_worker.hpp"
 
-#include "core/chunk_context.hpp"
-
-ChunkWorker::ChunkWorker(ChunkManager& manager, Chunk* chunk) : m_manager(manager), m_chunk(chunk)
+ChunkWorker::ChunkWorker(PixelWorld& manager, Chunk* chunk) : m_manager(manager), m_chunk(chunk)
 {
 }
 
@@ -17,8 +15,8 @@ void ChunkWorker::update_chunk(float time_step)
         {
             Cell& cell = m_chunk->get_cell({ x, y });
             const Point world_position = {
-                x + (position.x / ChunkContext::cell_size),
-                y + (position.y / ChunkContext::cell_size)
+                x + (position.x / m_manager.get_chunk_cell_size()),
+                y + (position.y / m_manager.get_chunk_cell_size())
             };
 
             update_cell(cell, world_position.x, world_position.y);

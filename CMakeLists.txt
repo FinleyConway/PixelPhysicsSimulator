@@ -10,9 +10,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "-Og -g") # makes debug usable
 include(FetchContent)
 include(CTest)
 
-# Boost
-find_package(Boost REQUIRED)
-
 # Raylib
 set(RAYLIB_VERSION 5.5)
 FetchContent_Declare(

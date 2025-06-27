@@ -1,12 +1,12 @@
 #pragma once
 
 #include "simulation/chunk.hpp"
-#include "simulation/chunk_manager.hpp"
+#include "simulation/pixel_world.hpp"
 
 class ChunkWorker
 {
 public:
-    ChunkWorker(ChunkManager& manager, Chunk* chunk);
+    ChunkWorker(PixelWorld& manager, Chunk* chunk);
     virtual ~ChunkWorker() = default;
 
     void update_chunk(float time_step);
@@ -25,6 +25,6 @@ private:
     void handle_life_time(Cell& cell, int x, int y, float time_step);
 
 private:
-    ChunkManager& m_manager;
+    PixelWorld& m_manager;
     Chunk* m_chunk = nullptr;
 };
